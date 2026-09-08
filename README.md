@@ -142,9 +142,6 @@ JA_Mini_Showcase/
 ├── test/                                  # Widget, provider, dropdown, marquee, logger, shortcuts tests
 ├── windows/                               # Flutter Windows runner and generated plugin glue
 ├── windows_native_guide/                  # Windows Acrylic/Mica native theming guide
-├── skills/                                # Editable JA-HUB skill source copies
-├── .agents/skills/                        # Antigravity skill runtime copies
-├── .claude/skills/                        # Claude Code skill runtime copies
 ├── ABOUT.txt                              # JA Auto Git project information card
 ├── CHANGELOG.md                           # Permanent release history
 ├── RELEASE_NOTES.md                       # GitHub release notes source

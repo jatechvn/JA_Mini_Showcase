@@ -49,3 +49,11 @@ assets/temp/
 dist/
 dist_pack/
 backup/
+
+# AI Agent skills and local tooling
+.agents/
+.claude/
+skills/
+skills_guide.md
+restore_skills.bat
+restore_skills.ps1
