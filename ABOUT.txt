@@ -1,0 +1,12 @@
+========================================================================
+                       PROJECT INFORMATION CARD
+========================================================================
+Project Name : JA_Mini_Showcase
+Tech Stack   : Flutter 3.44.2 / Dart 3.12.2 / Provider / Windows Desktop
+Version      : 1.1.0+3
+Managed By   : JA Auto Git
+Website      : https://jatechvn.github.io/
+Repository   : https://github.com/jatechvn/JA_Mini_Showcase
+------------------------------------------------------------------------
+Description  : Flutter desktop showcase for JA-HUB Bento Glassmorphism, Dynamic Island navigation, interactive terminal, global shortcuts, live glass tuning, command palette, device list filters, telemetry widgets, and reusable UI motion patterns.
+========================================================================
