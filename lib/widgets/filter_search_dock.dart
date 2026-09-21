@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'glass_search_history_field.dart';
 import 'glass_widgets.dart';
 
 /// A search field + filter pills and optional droplist for long lists,
@@ -14,6 +15,8 @@ class FilterSearchDock extends StatelessWidget {
     required this.onFilterSelected,
     this.searchController,
     this.searchFocusNode,
+    this.searchCategory,
+    this.suffixBadge,
     this.onSearchChanged,
     this.searchHint = 'Search…',
     this.dropdownItems,
@@ -28,6 +31,8 @@ class FilterSearchDock extends StatelessWidget {
   final ValueChanged<String> onFilterSelected;
   final TextEditingController? searchController;
   final FocusNode? searchFocusNode;
+  final String? searchCategory;
+  final Widget? suffixBadge;
   final ValueChanged<String>? onSearchChanged;
   final String searchHint;
   final List<GlassDropdownItem<String>>? dropdownItems;
@@ -42,6 +47,8 @@ class FilterSearchDock extends StatelessWidget {
         dropdownItems!.isNotEmpty &&
         onDropdownChanged != null;
 
+    final useHistoryField = searchCategory != null && searchController != null;
+
     return GlassContainer(
       colors: colors,
       borderRadius: 16,
@@ -52,22 +59,36 @@ class FilterSearchDock extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.search_rounded, size: 18, color: colors.textMuted),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: searchController,
-                  focusNode: searchFocusNode,
-                  onChanged: onSearchChanged,
-                  style: TextStyle(color: colors.textPrimary, fontSize: 13),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
+              if (useHistoryField)
+                Expanded(
+                  child: GlassSearchHistoryField(
+                    controller: searchController!,
+                    focusNode: searchFocusNode,
+                    category: searchCategory!,
                     hintText: searchHint,
-                    hintStyle: TextStyle(color: colors.textMuted),
+                    onChanged: onSearchChanged,
+                    suffixBadge: suffixBadge,
+                    borderRadius: 10,
+                  ),
+                )
+              else ...[
+                Icon(Icons.search_rounded, size: 18, color: colors.textMuted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    focusNode: searchFocusNode,
+                    onChanged: onSearchChanged,
+                    style: TextStyle(color: colors.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: searchHint,
+                      hintStyle: TextStyle(color: colors.textMuted),
+                    ),
                   ),
                 ),
-              ),
+              ],
               if (hasDropdown) ...[
                 const SizedBox(width: 10),
                 SizedBox(

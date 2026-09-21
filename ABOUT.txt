@@ -3,7 +3,7 @@
 ========================================================================
 Project Name : JA_Mini_Showcase
 Tech Stack   : Flutter 3.44.2 / Dart 3.12.2 / Provider / Windows Desktop
-Version      : 1.1.0+3
+Version      : 1.2.0+4
 Managed By   : JA Auto Git
 Website      : https://jatechvn.github.io/
 Repository   : https://github.com/jatechvn/JA_Mini_Showcase

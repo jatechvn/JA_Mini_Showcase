@@ -254,6 +254,56 @@ mixin _SampleComponentsCards on _SampleComponentsStateBase {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+
+        // RotatingGlowBorder Showcase Card
+        RotatingGlowBorder(
+          isActive: true,
+          color: colors.accentCyan,
+          borderRadius: 20,
+          borderWidth: 2.0,
+          glowBlur: 6.0,
+          child: BentoCard(
+            colors: colors,
+            showTopHighlight: false,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                PillBadge(
+                  label: 'ROTATING GLOW BORDER',
+                  color: colors.accentCyan,
+                  bg: colors.accentCyan.withValues(alpha: 0.12),
+                  border: colors.accentCyan.withValues(alpha: 0.35),
+                  icon: Icons.rotate_right_rounded,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Rotating Glow Border Animation (Cyber Comet)',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Hiệu ứng luồng sáng neon chuyển động xoay tròn quanh chu vi card với tâm sáng trắng specular, vệt quang phổ rực rỡ và hào quang tỏa sáng (bloom). Tự động pause khi ẩn cửa sổ.',
+                        style: TextStyle(
+                          color: colors.textMuted,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

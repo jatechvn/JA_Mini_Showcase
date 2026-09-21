@@ -29,6 +29,28 @@ Widget _createTerminalTestApp({
 }
 
 void main() {
+  testWidgets('Failed custom command is printed and terminal remains usable', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _createTerminalTestApp(
+        onCommand: (command) async {
+          if (command == 'fail') throw StateError('test failure');
+          return null;
+        },
+      ),
+    );
+    await tester.enterText(find.byType(TextField), 'fail');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.textContaining('Command failed:'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.enterText(find.byType(TextField), 'echo recovered');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('recovered'), findsOneWidget);
+  });
+
   group('GlassTerminalPanel Tests', () {
     testWidgets(
       'Renders terminal window chrome, badge and initial welcome message',
@@ -224,5 +246,102 @@ void main() {
       expect(textField.focusNode!.hasFocus, isTrue);
       expect(textField.showCursor, isTrue);
     });
+
+    testWidgets(
+      'GlassTerminalController appends lines, clears buffer, and focuses prompt',
+      (WidgetTester tester) async {
+        final controller = GlassTerminalController();
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => ThemeProvider()),
+              ChangeNotifierProvider(create: (_) => LanguageProvider()),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: GlassTerminalPanel(
+                  controller: controller,
+                  quickCommands: const ['ping', 'status', 'custom_run'],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // 1. Verify custom quick command chips render
+        expect(find.text('custom_run'), findsOneWidget);
+
+        // 2. Programmatically append lines via controller
+        controller.appendLine(
+          '[DEPLOY] Service package deployed successfully',
+          type: TerminalLineType.success,
+        );
+        controller.appendLines([
+          '[WARN] High memory load detected: 84%',
+          '[ERROR] Connection to 10.0.0.1 reset by peer',
+        ], type: TerminalLineType.warn);
+        await tester.pump();
+
+        expect(
+          find.text('[DEPLOY] Service package deployed successfully'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('[WARN] High memory load detected: 84%'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('[ERROR] Connection to 10.0.0.1 reset by peer'),
+          findsOneWidget,
+        );
+        expect(controller.lineCount, greaterThanOrEqualTo(4));
+
+        // 3. Focus prompt via controller
+        controller.focusPrompt();
+        await tester.pump();
+        final promptField = tester.widget<TextField>(find.byType(TextField));
+        expect(promptField.focusNode?.hasFocus, isTrue);
+
+        // 4. Clear stream via controller
+        controller.clear();
+        await tester.pump();
+        expect(
+          find.text('[DEPLOY] Service package deployed successfully'),
+          findsNothing,
+        );
+        expect(controller.lineCount, equals(0));
+      },
+    );
+
+    testWidgets(
+      'promptFocusNode auto-focuses terminal prompt on initial build',
+      (WidgetTester tester) async {
+        final promptFocus = FocusNode();
+        addTearDown(promptFocus.dispose);
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => ThemeProvider()),
+              ChangeNotifierProvider(create: (_) => LanguageProvider()),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: GlassTerminalPanel(promptFocusNode: promptFocus),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        promptFocus.requestFocus();
+        await tester.pump();
+
+        final promptField = tester.widget<TextField>(find.byType(TextField));
+        expect(promptField.focusNode?.hasFocus, isTrue);
+      },
+    );
   });
 }

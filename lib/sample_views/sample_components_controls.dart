@@ -253,4 +253,82 @@ mixin _SampleComponentsControls on _SampleComponentsStateBase {
       ),
     );
   }
+
+  Widget _buildSmartSearchSection(AppColors colors) {
+    return BentoCard(
+      colors: colors,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '2.5. Ô TÌM KIẾM THÔNG MINH (BENTO GLASS SEARCH WITH HISTORY)',
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              PillBadge(
+                label: 'LIVE SUGGESTIONS',
+                color: colors.accentCyan,
+                bg: colors.accentCyan.withValues(alpha: 0.12),
+                border: colors.accentCyan.withValues(alpha: 0.35),
+                showDot: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tự động ghi nhớ truy vấn, gợi ý popup kính mờ khi gõ hoặc bấm mũi tên xuống [↓], hỗ trợ phím [Esc] để đóng, xóa từng mục hoặc xóa toàn bộ lịch sử.',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          GlassSearchHistoryField(
+            controller: _sampleSearchController,
+            focusNode: _sampleSearchFocus,
+            category: 'components',
+            hintText: 'Thử tìm linh kiện: GlassTerminal, Button, Dropdown…',
+            suffixBadge: Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: colors.accentCyan.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'DEMO',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.bold,
+                  color: colors.accentCyan,
+                ),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (query) {
+              showAppToast(
+                context,
+                colors: colors,
+                message: 'Đã tìm kiếm: "$query"',
+                icon: Icons.search_rounded,
+                accentColor: colors.accentCyan,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

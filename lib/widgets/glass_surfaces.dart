@@ -146,6 +146,7 @@ class BentoCard extends StatelessWidget {
   final Color? customBg;
   final Color? customBorder;
   final double? bgOpacity;
+  final bool showTopHighlight;
 
   const BentoCard({
     super.key,
@@ -159,6 +160,7 @@ class BentoCard extends StatelessWidget {
     this.customBg,
     this.customBorder,
     this.bgOpacity,
+    this.showTopHighlight = true,
   });
 
   @override
@@ -209,17 +211,19 @@ class BentoCard extends StatelessWidget {
                 ),
             ],
           ),
-          foregroundDecoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border(
-              top: BorderSide(
-                color: isFeatured
-                    ? colors.accentCyan.withValues(alpha: 0.6)
-                    : colors.glassHighlight,
-                width: 1,
-              ),
-            ),
-          ),
+          foregroundDecoration: showTopHighlight
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border(
+                    top: BorderSide(
+                      color: isFeatured
+                          ? colors.accentCyan.withValues(alpha: 0.6)
+                          : colors.glassHighlight,
+                      width: 1,
+                    ),
+                  ),
+                )
+              : null,
           child: child,
         ),
       ),

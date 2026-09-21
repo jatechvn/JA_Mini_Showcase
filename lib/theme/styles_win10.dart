@@ -3,13 +3,13 @@ import 'app_colors.dart';
 
 const win10DarkColors = AppColors(
   bgPrimary: Colors.transparent,
-  bgSecondary: Color(0x20000000), // Clean translucent tint
-  cardBg: Color(0x381E293B), // ~22% slate glass
+  bgSecondary: Color(0x14000000), // Subtle dark tint
+  cardBg: Color(0x381E293B), // ~22% slate with backdrop blur
   cardHoverBg: Color(0x55334155),
   subCardBg: Color(0x2E0F172A),
   subCardBorder: Color(0x26FFFFFF),
-  sidebarBg: Color(0x38121212),
-  headerBg: Color(0x400F172A),
+  sidebarBg: Color(0x33121212),
+  headerBg: Color(0x4D0F172A),
   headerBorder: Color(0x26FFFFFF),
   textPrimary: Color(0xFFF8FAFC),
   textSecondary: Color(0xFF94A3B8),
@@ -25,21 +25,21 @@ const win10DarkColors = AppColors(
   orb1: Color(0xFF0066FF),
   orb2: Color(0xFFA855F7),
   orb3: Color(0xFF00D2FF),
-  orbOpacity: 0.20,
+  orbOpacity: 0.22,
   glassBg: Color(0x381E293B),
   glassBorder: Color(0x26FFFFFF),
-  glassHighlight: Color(0x33FFFFFF),
+  glassHighlight: Color(0x4DFFFFFF),
 );
 
 const win10LightColors = AppColors(
   bgPrimary: Colors.transparent,
-  bgSecondary: Color(0x20FFFFFF),
-  cardBg: Color(0x40FFFFFF), // ~25% white glass
+  bgSecondary: Color(0x14FFFFFF), // Subtle light tint
+  cardBg: Color(0x40FFFFFF), // ~25% white with backdrop blur
   cardHoverBg: Color(0x73FFFFFF),
-  subCardBg: Color(0x33FFFFFF),
-  subCardBorder: Color(0x4DFFFFFF),
-  sidebarBg: Color(0x38F0F0F0),
-  headerBg: Color(0x4DFFFFFF),
+  subCardBg: Color(0x29FFFFFF),
+  subCardBorder: Color(0x33FFFFFF),
+  sidebarBg: Color(0x33F0F0F0),
+  headerBg: Color(0x59FFFFFF),
   headerBorder: Color(0x4DFFFFFF),
   textPrimary: Color(0xFF0F172A),
   textSecondary: Color(0xFF475569),
@@ -55,8 +55,8 @@ const win10LightColors = AppColors(
   orb1: Color(0xFF0066FF),
   orb2: Color(0xFFA855F7),
   orb3: Color(0xFF00D2FF),
-  orbOpacity: 0.22,
-  glassBg: Color(0x40FFFFFF),
+  orbOpacity: 0.20,
+  glassBg: Color(0x4DFFFFFF),
   glassBorder: Color(0x40FFFFFF),
-  glassHighlight: Color(0xE6FFFFFF),
+  glassHighlight: Color(0x80FFFFFF),
 );

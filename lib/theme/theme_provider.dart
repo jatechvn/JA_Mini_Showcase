@@ -46,7 +46,7 @@ class ThemeProvider extends ChangeNotifier {
   int _cpuCores = 4;
   int _hardwareScore = 50;
 
-  // Glassmorphism live tuning parameters (Image 1 defaults)
+  // MES Tool glass defaults; Auto hardware detection must not change this look.
   double _cardBlur = 20.0;
   double _cardOpacity = 0.25;
   double _dialogBlur = 20.0;
@@ -154,6 +154,9 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   void _applyTierParameters(HardwareTier tier, {bool notify = true}) {
+    // Auto reports the detected hardware tier but uses a stable glass baseline.
+    // Only explicitly selected presets may trade transparency for performance.
+    if (_perfMode == PerfTierMode.auto) tier = HardwareTier.ultra;
     switch (tier) {
       case HardwareTier.ultra:
         _cardBlur = 20.0;

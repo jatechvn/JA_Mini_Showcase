@@ -36,6 +36,35 @@ class TerminalLine {
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
+/// Controller to manipulate terminal output stream from external callers.
+class GlassTerminalController {
+  _GlassTerminalPanelState? _state;
+
+  void appendLine(
+    String text, {
+    TerminalLineType type = TerminalLineType.output,
+  }) {
+    _state?.appendExternalLine(text, type: type);
+  }
+
+  void appendLines(
+    List<String> lines, {
+    TerminalLineType type = TerminalLineType.output,
+  }) {
+    _state?.appendExternalLines(lines, type: type);
+  }
+
+  void clear() {
+    _state?.clearStream();
+  }
+
+  void focusPrompt() {
+    _state?._keepPromptFocused();
+  }
+
+  int get lineCount => _state?._lines.length ?? 0;
+}
+
 /// Dedicated high-contrast color palette inspired by Fedora 44 (Ptyxis / GNOME Console).
 ///
 /// Ensures crisp, high-contrast legibility across both Dark Mode (Obsidian Velvet)
@@ -227,12 +256,18 @@ class GlassTerminalPanel extends StatefulWidget {
   final String? terminalTitle;
   final String? initialWelcomeText;
   final FutureOr<String?> Function(String command)? onCommand;
+  final GlassTerminalController? controller;
+  final List<String>? quickCommands;
+  final FocusNode? promptFocusNode;
 
   const GlassTerminalPanel({
     super.key,
     this.terminalTitle,
     this.initialWelcomeText,
     this.onCommand,
+    this.controller,
+    this.quickCommands,
+    this.promptFocusNode,
   });
 
   @override
@@ -248,10 +283,10 @@ class _GlassTerminalPanelState extends State<GlassTerminalPanel> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  late final FocusNode _focusNode = FocusNode(
-    debugLabel: 'TerminalPromptFocusNode',
-    onKeyEvent: _handleKeyEvent,
-  );
+  FocusNode? _internalFocusNode;
+  FocusNode get _effectiveFocusNode =>
+      widget.promptFocusNode ??
+      (_internalFocusNode ??= FocusNode(debugLabel: 'TerminalPromptFocusNode'));
 
   bool _autoScroll = true;
 
@@ -274,21 +309,37 @@ class _GlassTerminalPanelState extends State<GlassTerminalPanel> {
   @override
   void initState() {
     super.initState();
+    widget.controller?._state = this;
     _initTerminalSession();
   }
 
+  @override
+  void didUpdateWidget(GlassTerminalPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._state = null;
+      widget.controller?._state = this;
+    }
+  }
+
   void _initTerminalSession() {
+    LanguageProvider? lang;
+    try {
+      lang = Provider.of<LanguageProvider>(context, listen: false);
+    } catch (_) {}
+
+    final initMsg = lang != null
+        ? lang.t('terminal_subsystem_init')
+        : 'JA Terminal Subsystem Initialized';
+
     final welcome =
         widget.initialWelcomeText ??
-        'JA Bento Glassmorphic Terminal [Version 1.2.0]\n'
-            'Type "help" to view available diagnostic and system commands.';
+        (lang != null
+            ? '${lang.t('terminal_default_banner')}\n${lang.t('terminal_default_help_hint')}'
+            : 'JA Bento Glassmorphic Terminal [Version 1.2.0]\n'
+                  'Type "help" to view available diagnostic and system commands.');
 
-    _lines.add(
-      TerminalLine(
-        'JA Terminal Subsystem Initialized',
-        type: TerminalLineType.system,
-      ),
-    );
+    _lines.add(TerminalLine(initMsg, type: TerminalLineType.system));
     for (final line in welcome.split('\n')) {
       _lines.add(TerminalLine(line, type: TerminalLineType.info));
     }
@@ -296,18 +347,52 @@ class _GlassTerminalPanelState extends State<GlassTerminalPanel> {
 
   @override
   void dispose() {
+    if (widget.controller?._state == this) {
+      widget.controller?._state = null;
+    }
     _inputController.dispose();
-    _focusNode.dispose();
+    _internalFocusNode?.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  void appendExternalLine(
+    String text, {
+    TerminalLineType type = TerminalLineType.output,
+  }) {
+    if (!mounted) return;
+    setState(() {
+      _lines.add(TerminalLine(text, type: type));
+    });
+    _scrollToBottom();
+  }
+
+  void appendExternalLines(
+    List<String> lines, {
+    TerminalLineType type = TerminalLineType.output,
+  }) {
+    if (!mounted) return;
+    setState(() {
+      for (final l in lines) {
+        _lines.add(TerminalLine(l, type: type));
+      }
+    });
+    _scrollToBottom();
+  }
+
+  void clearStream() {
+    if (!mounted) return;
+    setState(() {
+      _lines.clear();
+    });
+  }
+
   void _keepPromptFocused() {
     if (!mounted) return;
-    _focusNode.requestFocus();
+    _effectiveFocusNode.requestFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _focusNode.requestFocus();
+        _effectiveFocusNode.requestFocus();
       }
     });
   }
@@ -431,11 +516,22 @@ class _GlassTerminalPanelState extends State<GlassTerminalPanel> {
 
     // Hook: external consumer callback
     if (widget.onCommand != null) {
-      final customResult = await widget.onCommand!(cmd);
+      final String? customResult;
+      try {
+        customResult = await widget.onCommand!(cmd);
+      } catch (error) {
+        if (!mounted) return;
+        appendExternalLine(
+          'Command failed: $error',
+          type: TerminalLineType.error,
+        );
+        return;
+      }
       if (customResult != null) {
         if (!mounted) return;
+        final outputLines = customResult.split('\n');
         setState(() {
-          for (final l in customResult.split('\n')) {
+          for (final l in outputLines) {
             _lines.add(TerminalLine(l, type: TerminalLineType.output));
           }
         });
@@ -825,6 +921,7 @@ class _GlassTerminalPanelState extends State<GlassTerminalPanel> {
             // 3. Quick Action Chips Bar (With solid contrast and borders)
             _QuickActionChips(
               palette: palette,
+              quickCommands: widget.quickCommands,
               onCommandSelected: (cmd) {
                 _executeCommand(cmd);
                 _keepPromptFocused();
@@ -832,12 +929,16 @@ class _GlassTerminalPanelState extends State<GlassTerminalPanel> {
             ),
 
             // 4. Interactive Command Prompt Bar (Persistently focused cursor)
-            _TerminalPromptBar(
-              palette: palette,
-              language: language,
-              controller: _inputController,
-              focusNode: _focusNode,
-              onSubmitted: _executeCommand,
+            Focus(
+              canRequestFocus: false,
+              onKeyEvent: _handleKeyEvent,
+              child: _TerminalPromptBar(
+                palette: palette,
+                language: language,
+                controller: _inputController,
+                focusNode: _effectiveFocusNode,
+                onSubmitted: _executeCommand,
+              ),
             ),
           ],
         ),
@@ -1056,13 +1157,15 @@ class _HeaderIconButton extends StatelessWidget {
 class _QuickActionChips extends StatelessWidget {
   final _TerminalThemePalette palette;
   final ValueChanged<String> onCommandSelected;
+  final List<String>? quickCommands;
 
   const _QuickActionChips({
     required this.palette,
     required this.onCommandSelected,
+    this.quickCommands,
   });
 
-  static const _commands = [
+  static const _defaultCommands = [
     'help',
     'status',
     'ping 8.8.8.8',
@@ -1074,6 +1177,7 @@ class _QuickActionChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final commands = quickCommands ?? _defaultCommands;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
@@ -1086,7 +1190,7 @@ class _QuickActionChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         child: Row(
-          children: _commands
+          children: commands
               .map((cmd) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),

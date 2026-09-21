@@ -12,6 +12,7 @@ class BorderBeam extends StatefulWidget {
     ],
     this.strokeWidth = 1.5,
     this.duration = const Duration(seconds: 5),
+    this.glowBlur = 4.0,
   });
 
   final Widget child;
@@ -19,6 +20,7 @@ class BorderBeam extends StatefulWidget {
   final List<Color> colors;
   final double strokeWidth;
   final Duration duration;
+  final double glowBlur;
 
   @override
   State<BorderBeam> createState() => _BorderBeamState();
@@ -36,9 +38,6 @@ class _BorderBeamState extends State<BorderBeam>
   @override
   void initState() {
     super.initState();
-    // Stops the gradient sweep while the window is minimized/hidden,
-    // mirroring the Page Visibility low-power sleep mode added to
-    // UI_DESIGN_Sample.html (0% background CPU when document.hidden).
     _lifecycleListener = AppLifecycleListener(
       onStateChange: (state) {
         switch (state) {
@@ -64,9 +63,6 @@ class _BorderBeamState extends State<BorderBeam>
 
   @override
   Widget build(BuildContext context) {
-    // Same isolation as MeshOrb: this beam repaints every frame while it's
-    // visible, so give it its own layer instead of dragging the card
-    // content along for each repaint.
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _controller,
@@ -77,6 +73,7 @@ class _BorderBeamState extends State<BorderBeam>
               borderRadius: widget.borderRadius,
               colors: widget.colors,
               strokeWidth: widget.strokeWidth,
+              glowBlur: widget.glowBlur,
             ),
             child: child,
           );
@@ -93,12 +90,14 @@ class _BorderBeamPainter extends CustomPainter {
     required this.borderRadius,
     required this.colors,
     required this.strokeWidth,
+    required this.glowBlur,
   });
 
   final double progress;
   final double borderRadius;
   final List<Color> colors;
   final double strokeWidth;
+  final double glowBlur;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -118,8 +117,19 @@ class _BorderBeamPainter extends CustomPainter {
       transform: GradientRotation(progress * 2 * math.pi),
     );
 
+    final shader = gradient.createShader(Offset.zero & size);
+
+    if (glowBlur > 0) {
+      final glowPaint = Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth * 2.2
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur);
+      canvas.drawRRect(rrect, glowPaint);
+    }
+
     final paint = Paint()
-      ..shader = gradient.createShader(Offset.zero & size)
+      ..shader = shader
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
@@ -128,7 +138,210 @@ class _BorderBeamPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BorderBeamPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress ||
+      oldDelegate.borderRadius != borderRadius ||
+      !listEquals(oldDelegate.colors, colors) ||
+      oldDelegate.glowBlur != glowBlur ||
+      oldDelegate.strokeWidth != strokeWidth;
+}
+
+// ── Rotating Glow Border ────────────────────────────────────────────────────
+
+/// A widget that paints an animated rotating glowing light beam around its perimeter
+/// with a specular white core head, vibrant neon trail, and soft outer bloom.
+/// Ideal for drawing strong visual attention to selected cards, active status, or featured UI.
+class RotatingGlowBorder extends StatefulWidget {
+  final Widget child;
+  final bool isActive;
+  final Color color;
+  final double borderRadius;
+  final double borderWidth;
+  final double glowBlur;
+  final Duration duration;
+
+  const RotatingGlowBorder({
+    super.key,
+    required this.child,
+    this.isActive = true,
+    required this.color,
+    this.borderRadius = 20.0,
+    this.borderWidth = 2.0,
+    this.glowBlur = 6.0,
+    this.duration = const Duration(milliseconds: 3000),
+  });
+
+  @override
+  State<RotatingGlowBorder> createState() => _RotatingGlowBorderState();
+}
+
+class _RotatingGlowBorderState extends State<RotatingGlowBorder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  AppLifecycleListener? _lifecycleListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+
+    if (widget.isActive) {
+      _controller.repeat();
+    }
+
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: (state) {
+        if (!mounted || !widget.isActive) return;
+        switch (state) {
+          case AppLifecycleState.hidden:
+          case AppLifecycleState.paused:
+            _controller.stop();
+          case AppLifecycleState.resumed:
+            _controller.repeat();
+          case AppLifecycleState.inactive:
+          case AppLifecycleState.detached:
+            break;
+        }
+      },
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant RotatingGlowBorder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.duration != oldWidget.duration) {
+      _controller.duration = widget.duration;
+      if (_controller.isAnimating) _controller.repeat();
+    }
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        final state = WidgetsBinding.instance.lifecycleState;
+        if (state != AppLifecycleState.hidden &&
+            state != AppLifecycleState.paused) {
+          _controller.repeat();
+        }
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener?.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isActive) {
+      return widget.child;
+    }
+
+    return RepaintBoundary(
+      child: Stack(
+        children: [
+          widget.child,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  return CustomPaint(
+                    painter: RotatingGlowBorderPainter(
+                      animationProgress: _controller.value,
+                      color: widget.color,
+                      borderRadius: widget.borderRadius,
+                      borderWidth: widget.borderWidth,
+                      glowBlur: widget.glowBlur,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RotatingGlowBorderPainter extends CustomPainter {
+  final double animationProgress;
+  final Color color;
+  final double borderRadius;
+  final double borderWidth;
+  final double glowBlur;
+
+  RotatingGlowBorderPainter({
+    required this.animationProgress,
+    required this.color,
+    required this.borderRadius,
+    required this.borderWidth,
+    required this.glowBlur,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    final halfWidth = borderWidth / 2.0;
+    final rect = Rect.fromLTWH(
+      halfWidth,
+      halfWidth,
+      size.width - borderWidth,
+      size.height - borderWidth,
+    );
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(math.max(0.0, borderRadius - halfWidth)),
+    );
+
+    final angle = animationProgress * 2 * math.pi;
+
+    final sweepGradient = SweepGradient(
+      center: Alignment.center,
+      transform: GradientRotation(angle),
+      colors: [
+        color.withValues(alpha: 0.0),
+        color.withValues(alpha: 0.15),
+        color.withValues(alpha: 0.85),
+        Colors.white,
+        color,
+        color.withValues(alpha: 0.65),
+        color.withValues(alpha: 0.15),
+        color.withValues(alpha: 0.0),
+      ],
+      stops: const [0.0, 0.05, 0.12, 0.16, 0.20, 0.26, 0.34, 1.0],
+    );
+
+    // 1. Diffuse outer neon bloom
+    if (glowBlur > 0) {
+      final glowPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth * 2.2
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur)
+        ..shader = sweepGradient.createShader(rect);
+      canvas.drawRRect(rrect, glowPaint);
+    }
+
+    // 2. Crisp stroke for the bright core beam
+    final corePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth
+      ..shader = sweepGradient.createShader(rect);
+    canvas.drawRRect(rrect, corePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant RotatingGlowBorderPainter oldDelegate) {
+    return oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.color != color ||
+        oldDelegate.borderRadius != borderRadius ||
+        oldDelegate.borderWidth != borderWidth ||
+        oldDelegate.glowBlur != glowBlur;
+  }
 }
 
 /// Mouse-follow spotlight glow — wrap a card's child to add a soft radial

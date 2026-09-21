@@ -6,8 +6,10 @@ import '../theme/theme_provider.dart';
 import '../theme/language_provider.dart';
 import '../theme/app_colors.dart';
 import '../modules/constants.dart' as app_constants;
+import '../modules/ota_update_service.dart';
 import '../widgets/glass_widgets.dart';
 import '../widgets/glass_dialog.dart';
+import '../widgets/glass_update_dialog.dart';
 import '../widgets/mobile_dock_nav.dart';
 import '../widgets/app_toast.dart';
 import '../sample_views/sample_bento_overview.dart';
@@ -38,6 +40,37 @@ class DashboardShell extends StatefulWidget {
 class _DashboardShellState extends State<DashboardShell> {
   int _currentIndex = 0;
   bool _isServiceRunning = true;
+  UpdatePackageInfo? _availableUpdate;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOtaUpdatesOnStartup();
+  }
+
+  Future<void> _checkOtaUpdatesOnStartup() async {
+    try {
+      final config = await OtaUpdateService().getConfig();
+      final should = OtaUpdateService().shouldCheckForUpdates(
+        lastCheckTime: config.lastCheckTime,
+        interval: config.checkInterval,
+      );
+      if (!should) return;
+
+      // Subtle delay so initial UI layout and window rendering settle first
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
+      final result = await OtaUpdateService().checkForUpdates(isManual: false);
+      if (mounted && result.hasUpdate && result.packageInfo != null) {
+        setState(() {
+          _availableUpdate = result.packageInfo;
+        });
+      }
+    } catch (e) {
+      debugPrint('[DashboardShell] OTA startup check error: $e');
+    }
+  }
 
   // Below this width the top SlidingPillTabBar hides and MobileDockNav
   // takes over, matching tablet/mobile responsive breakpoints.
@@ -355,7 +388,35 @@ class _DashboardShellState extends State<DashboardShell> {
 
           const SizedBox(width: 6),
 
-          // 4. Glassmorphism Settings Button with Hover Zoom & Full Text
+          // 4. OTA Update Available Pill (If detected)
+          if (_availableUpdate != null) ...[
+            TopBarExpandingButton(
+              icon: Icon(
+                Icons.system_update_alt_rounded,
+                color: colors.accentEmerald,
+                size: 14,
+              ),
+              collapsedLabel: isCompact
+                  ? null
+                  : _availableUpdate!.version.displayVersion,
+              expandedLabel: '🚀 ${_availableUpdate!.version.displayVersion}',
+              textColor: colors.accentEmerald,
+              isCompact: isCompact,
+              tooltip: language.t('ota_update_tooltip', [
+                _availableUpdate!.version.displayVersion,
+              ]),
+              colors: colors,
+              onTap: () {
+                showGlassUpdateDialog(
+                  context: context,
+                  packageInfo: _availableUpdate!,
+                );
+              },
+            ),
+            const SizedBox(width: 6),
+          ],
+
+          // 5. Glassmorphism Settings Button with Hover Zoom & Full Text
           TopBarExpandingButton(
             icon: Icon(
               Icons.settings_rounded,
@@ -407,8 +468,8 @@ class _DashboardShellState extends State<DashboardShell> {
               title: language.t('settings_dialog_title'),
               icon: Icons.tune_rounded,
               isDark: theme.isDark,
-              width: 600,
-              height: 560,
+              width: 620,
+              height: 580,
               contentPadding: EdgeInsets.zero,
               blurSigma: localDialogBlur,
               bgOpacity: localDialogOpacity,
@@ -498,17 +559,32 @@ class _DashboardShellState extends State<DashboardShell> {
                             },
                           )
                         : (activeTab == 1
-                              ? _SettingsUserGuideTab(
-                                  colors: colors,
-                                  language: language,
-                                )
-                              : _SettingsAboutTab(
+                              ? _SettingsOtaUpdateTab(
                                   colors: colors,
                                   theme: theme,
                                   language: language,
                                   appVersion: widget.appVersion,
-                                  isDebug: widget.isDebug,
-                                )),
+                                  onUpdateFound: (pkg) {
+                                    setDialogState(() {
+                                      _availableUpdate = pkg;
+                                    });
+                                    setState(() {
+                                      _availableUpdate = pkg;
+                                    });
+                                  },
+                                )
+                              : (activeTab == 2
+                                    ? _SettingsUserGuideTab(
+                                        colors: colors,
+                                        language: language,
+                                      )
+                                    : _SettingsAboutTab(
+                                        colors: colors,
+                                        theme: theme,
+                                        language: language,
+                                        appVersion: widget.appVersion,
+                                        isDebug: widget.isDebug,
+                                      ))),
                   ),
                 ],
               ),

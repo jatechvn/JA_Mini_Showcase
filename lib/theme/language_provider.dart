@@ -86,12 +86,25 @@ class LanguageProvider extends ChangeNotifier {
     }
   }
 
-  /// Localized String dictionary lookup
-  String t(String key) {
+  /// Localized String dictionary lookup with parameter substitution
+  String t(String key, [List<dynamic>? args]) {
     final entry = _translations[key];
     if (entry == null) return key;
-    return entry[_currentLanguage.code.toLowerCase()] ?? entry['vi'] ?? key;
+    var str = entry[_currentLanguage.code.toLowerCase()] ?? entry['vi'] ?? key;
+    if (args != null && args.isNotEmpty) {
+      for (final arg in args) {
+        if (str.contains('%s')) {
+          str = str.replaceFirst('%s', arg.toString());
+        } else if (str.contains('%d')) {
+          str = str.replaceFirst('%d', arg.toString());
+        }
+      }
+    }
+    return str;
   }
+
+  /// Backward-compatible alias for shared JA modules
+  String tr(String key, [List<dynamic>? args]) => t(key, args);
 
   static const Map<String, Map<String, String>> _translations = {
     'perf_tooltip': {
@@ -177,12 +190,162 @@ class LanguageProvider extends ChangeNotifier {
       'en': 'Glass & UI',
       'cn': '界面与毛玻璃',
     },
+    'tab_ota_update': {
+      'vi': 'Cập nhật OTA',
+      'en': 'OTA Update',
+      'cn': 'OTA 更新',
+    },
     'tab_user_guide': {
       'vi': 'Hướng dẫn sử dụng',
       'en': 'User Guide',
       'cn': '使用指南',
     },
     'tab_about': {'vi': 'Giới thiệu', 'en': 'About', 'cn': '关于应用'},
+    // OTA Update Keys
+    'ota_title': {
+      'vi': 'Cập nhật tự động qua mạng LAN (OTA)',
+      'en': 'Over-The-Air LAN Updates (OTA)',
+      'cn': '局域网自动更新 (OTA)',
+    },
+    'ota_desc': {
+      'vi':
+          'Tự động kiểm tra và nâng cấp phiên bản mới từ thư mục chia sẻ nội bộ SMB/UNC.',
+      'en':
+          'Automatically checks and applies updates from internal SMB/UNC shares.',
+      'cn': '从内部 SMB/UNC 共享文件夹自动检查并应用新版本更新。',
+    },
+    'ota_server_path': {
+      'vi': 'Đường dẫn máy chủ cập nhật (SMB/UNC)',
+      'en': 'Update Server Path (SMB/UNC)',
+      'cn': '更新服务器路径 (SMB/UNC)',
+    },
+    'ota_server_path_hint': {
+      'vi': r'\\10.81.141.226\temp\FBT\JA_PROJECT\JA_Update\JA_Mini_Showcase',
+      'en': r'\\10.81.141.226\temp\FBT\JA_PROJECT\JA_Update\JA_Mini_Showcase',
+      'cn': r'\\10.81.141.226\temp\FBT\JA_PROJECT\JA_Update\JA_Mini_Showcase',
+    },
+    'ota_check_interval': {
+      'vi': 'Chu kỳ kiểm tra tự động',
+      'en': 'Automatic Check Interval',
+      'cn': '自动检查周期',
+    },
+    'interval_daily': {'vi': 'Hàng ngày', 'en': 'Daily', 'cn': '每日'},
+    'interval_weekly': {'vi': 'Hàng tuần', 'en': 'Weekly', 'cn': '每周'},
+    'interval_monthly': {'vi': 'Hàng tháng', 'en': 'Monthly', 'cn': '每月'},
+    'interval_off': {'vi': 'Tắt', 'en': 'Disabled', 'cn': '关闭'},
+    'ota_auth_title': {
+      'vi': 'Thông tin xác thực mạng nội bộ (Tùy chọn)',
+      'en': 'Network Credentials (Optional)',
+      'cn': '局域网身份验证 (可选)',
+    },
+    'ota_username': {
+      'vi': 'Tài khoản (Username)',
+      'en': 'Username',
+      'cn': '用户名',
+    },
+    'ota_password': {'vi': 'Mật khẩu (Password)', 'en': 'Password', 'cn': '密码'},
+    'ota_open_config_folder': {
+      'vi': 'Mở thư mục cấu hình',
+      'en': 'Open Config Folder',
+      'cn': '打开配置目录',
+    },
+    'ota_test_connection': {
+      'vi': 'Kiểm tra kết nối',
+      'en': 'Test Connection',
+      'cn': '测试连接',
+    },
+    'ota_testing_connection': {
+      'vi': 'Đang kiểm tra kết nối...',
+      'en': 'Testing connection...',
+      'cn': '正在测试连接...',
+    },
+    'ota_connection_success': {
+      'vi': 'Kết nối máy chủ thành công!',
+      'en': 'Server connection successful!',
+      'cn': '服务器连接成功！',
+    },
+    'ota_connection_failed': {
+      'vi': 'Không thể truy cập máy chủ cập nhật: %s',
+      'en': 'Cannot access update server: %s',
+      'cn': '无法访问更新服务器: %s',
+    },
+    'ota_check_now': {
+      'vi': 'Kiểm tra bản cập nhật ngay',
+      'en': 'Check for Updates Now',
+      'cn': '立即检查更新',
+    },
+    'ota_checking': {
+      'vi': 'Đang quét máy chủ tìm bản mới...',
+      'en': 'Scanning server for updates...',
+      'cn': '正在扫描服务器新版本...',
+    },
+    'ota_no_updates': {
+      'vi': 'Bạn đang sử dụng phiên bản mới nhất (%s)',
+      'en': 'You are using the latest version (%s)',
+      'cn': '当前已是最新版本 (%s)',
+    },
+    'ota_update_available': {
+      'vi': 'Đã có bản cập nhật mới: %s',
+      'en': 'New version available: %s',
+      'cn': '发现新版本: %s',
+    },
+    'ota_update_tooltip': {
+      'vi': 'Bản cập nhật mới: %s. Nhấp để nâng cấp!',
+      'en': 'New version available: %s. Click to update!',
+      'cn': '发现新版本: %s。点击立即更新！',
+    },
+    'ota_current_version': {
+      'vi': 'Phiên bản hiện tại:',
+      'en': 'Current version:',
+      'cn': '当前版本:',
+    },
+    'ota_latest_version': {
+      'vi': 'Phiên bản mới nhất:',
+      'en': 'Latest version:',
+      'cn': '最新版本:',
+    },
+    'ota_last_checked': {
+      'vi': 'Kiểm tra lần cuối:',
+      'en': 'Last checked:',
+      'cn': '最后检查时间:',
+    },
+    'ota_never_checked': {
+      'vi': 'Chưa kiểm tra',
+      'en': 'Never checked',
+      'cn': '从未检查',
+    },
+    'ota_dialog_title': {
+      'vi': 'Cập nhật phiên bản mới',
+      'en': 'New Version Update',
+      'cn': '新版本更新',
+    },
+    'ota_package_size': {
+      'vi': 'Dung lượng gói: %s',
+      'en': 'Package size: %s',
+      'cn': '安装包大小: %s',
+    },
+    'ota_release_notes': {
+      'vi': 'Thông tin phát hành & Điểm mới',
+      'en': 'Release Notes & Highlights',
+      'cn': '版本更新说明与亮点',
+    },
+    'ota_update_now': {'vi': 'Cập nhật ngay', 'en': 'Update Now', 'cn': '立即更新'},
+    'ota_update_later': {'vi': 'Để sau', 'en': 'Later', 'cn': '稍后再说'},
+    'ota_downloading': {
+      'vi': 'Đang tải bản cập nhật...',
+      'en': 'Downloading update...',
+      'cn': '正在下载更新...',
+    },
+    'ota_extracting': {
+      'vi': 'Đang giải nén gói cập nhật...',
+      'en': 'Extracting update package...',
+      'cn': '正在解压更新包...',
+    },
+    'ota_ready_restart': {
+      'vi': 'Đã chuẩn bị xong. Đang khởi động lại...',
+      'en': 'Ready! Restarting application...',
+      'cn': '准备就绪，正在重启应用程序...',
+    },
     'guide_shortcuts_title': {
       'vi': 'Phím tắt toàn cục',
       'en': 'Global Shortcuts',
@@ -215,11 +378,11 @@ class LanguageProvider extends ChangeNotifier {
     },
     'guide_tier_desc': {
       'vi':
-          '• Ultra: 120 FPS, tối đa hiệu ứng làm mờ Acrylic/Aero.\n• Balanced: 60 FPS, tối ưu hóa cho Laptop và tiết kiệm pin.\n• Lite: Tắt toàn bộ làm mờ, không giật lag trên máy yếu.',
+          '• Auto: Giữ kính chuẩn MES Tool trên mọi cấu hình: blur 20, opacity card 25%, dialog 85%, dropdown 86%.\n• Ultra/Balanced/Lite: Preset chọn thủ công để điều chỉnh blur và opacity. Lite tắt blur card/dropdown, giữ blur dialog 8.\n• Chuyển về Auto hoặc Reset sẽ khôi phục kính chuẩn; vẫn có thể tinh chỉnh bằng slider.',
       'en':
-          '• Ultra: 120 FPS, maximum Acrylic/Aero glassmorphism.\n• Balanced: 60 FPS, optimized for laptops and battery.\n• Lite: Zero blur, ultra-low power consumption on weak hardware.',
+          '• Auto: Stable MES Tool glass on every machine: blur 20, card opacity 25%, dialog 85%, dropdown 86%.\n• Ultra/Balanced/Lite: Manually selected blur and opacity presets. Lite disables card/dropdown blur and retains dialog blur 8.\n• Returning to Auto or Reset restores the baseline; sliders still allow live tuning.',
       'cn':
-          '• Ultra: 120 FPS，最大化 Acrylic/Aero 毛玻璃模糊效果。\n• Balanced: 60 FPS，专为笔记本与省电优化。\n• Lite: 关闭全部模糊，低端设备流畅不卡顿。',
+          '• Auto：所有机器保持 MES Tool 标准玻璃：模糊 20，卡片不透明度 25%，弹窗 85%，下拉菜单 86%。\n• Ultra/Balanced/Lite：手动选择模糊和不透明度预设。Lite 关闭卡片和下拉模糊，保留弹窗模糊 8。\n• 返回 Auto 或重置恢复标准值；仍可通过滑块实时调整。',
     },
     'guide_scroll_title': {
       'vi': 'Cuộn bật nảy & Bảng chọn dài',
@@ -299,6 +462,57 @@ class LanguageProvider extends ChangeNotifier {
       'vi': 'Nhập lệnh (gõ help để xem danh sách)...',
       'en': 'Enter command (type help for list)...',
       'cn': '输入命令 (输入 help 查看列表)...',
+    },
+    'search_history_title': {
+      'vi': 'Lịch sử tìm kiếm gần đây',
+      'en': 'Recent search history',
+      'cn': '最近搜索历史',
+    },
+    'search_history_clear': {
+      'vi': 'Xóa toàn bộ',
+      'en': 'Clear all history',
+      'cn': '清除全部',
+    },
+    'search_history_empty': {
+      'vi': 'Chưa có lịch sử tìm kiếm',
+      'en': 'No search history',
+      'cn': '暂无搜索历史',
+    },
+    'search_history_delete_item': {
+      'vi': 'Xóa khỏi lịch sử',
+      'en': 'Remove from history',
+      'cn': '从历史中删除',
+    },
+    'terminal_subsystem_init': {
+      'vi': 'Khởi chạy Phân hệ Terminal JA thành công',
+      'en': 'JA Terminal Subsystem Initialized',
+      'cn': 'JA 终端子系统已初始化',
+    },
+    'terminal_default_banner': {
+      'vi': 'Bảng Điều Khiển Lệnh JA Bento Terminal [Phiên bản 1.2.0]',
+      'en': 'JA Bento Terminal Command Console [Version 1.2.0]',
+      'cn': 'JA 便当玻璃终端控制台 [版本 1.2.0]',
+    },
+    'terminal_default_help_hint': {
+      'vi':
+          'Gõ "help" để xem danh sách các lệnh chẩn đoán và hệ thống khả dụng.',
+      'en': 'Type "help" to view available diagnostic and system commands.',
+      'cn': '输入 "help" 查看可用诊断与系统命令。',
+    },
+    'terminal_current_time': {
+      'vi': 'Thời gian hiện tại của hệ thống',
+      'en': 'Current system time',
+      'cn': '系统当前时间',
+    },
+    'terminal_help_header': {
+      'vi': 'Danh sách lệnh chẩn đoán & Shell khả dụng:',
+      'en': 'Available Diagnostic & Shell Commands:',
+      'cn': '可用诊断与 Shell 命令：',
+    },
+    'terminal_cmd_not_found': {
+      'vi': 'Lệnh không hợp lệ',
+      'en': 'Command not recognized',
+      'cn': '未识别的命令',
     },
   };
 }

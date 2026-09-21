@@ -48,6 +48,42 @@ void main() {
   });
 
   group('Hardware Tier & Profiling Tests', () {
+    test(
+      'Auto and reset restore stable MES glass after every manual preset',
+      () {
+        final theme = ThemeProvider();
+        addTearDown(theme.dispose);
+        void expectDefaults() {
+          expect(theme.perfMode, PerfTierMode.auto);
+          expect(theme.effectiveTier, theme.detectedTier);
+          expect(theme.cardBlur, 20);
+          expect(theme.dialogBlur, 20);
+          expect(theme.dropdownBlur, 20);
+          expect(theme.cardOpacity, 0.25);
+          expect(theme.dialogOpacity, 0.85);
+          expect(theme.dropdownOpacity, 0.86);
+        }
+
+        expectDefaults();
+        for (final mode in [
+          PerfTierMode.ultra,
+          PerfTierMode.balanced,
+          PerfTierMode.lite,
+        ]) {
+          theme.setPerfTierMode(mode);
+          theme.setPerfTierMode(PerfTierMode.auto);
+          expectDefaults();
+          theme.setPerfTierMode(mode);
+          theme.setLiveGlassmorphism(cardOpacity: 0.7, dialogBlur: 5);
+          theme.resetToDefaults();
+          expectDefaults();
+        }
+        theme.setPerfTierMode(PerfTierMode.lite);
+        theme.cyclePerfTier();
+        expectDefaults();
+      },
+    );
+
     test('Calculates hardware score and detected tier properly', () {
       final theme = ThemeProvider();
       expect(theme.hardwareScore, inInclusiveRange(10, 100));

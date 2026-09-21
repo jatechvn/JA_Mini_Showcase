@@ -8,6 +8,8 @@ abstract class _SampleComponentsStateBase extends State<SampleComponentsView> {
   int _bounceTrigger = 0;
   String _selectedGateway = 'vn-south-1';
   final ScrollController _bounceListController = ScrollController();
+  final TextEditingController _sampleSearchController = TextEditingController();
+  final FocusNode _sampleSearchFocus = FocusNode();
   final TextEditingController _marqueeController = TextEditingController(
     text:
         'JA Flutter Bento Glassmorphism & Dynamic Island UI Framework Showcase',
@@ -17,6 +19,8 @@ abstract class _SampleComponentsStateBase extends State<SampleComponentsView> {
   void dispose() {
     _bounceListController.dispose();
     _marqueeController.dispose();
+    _sampleSearchController.dispose();
+    _sampleSearchFocus.dispose();
     super.dispose();
   }
 }

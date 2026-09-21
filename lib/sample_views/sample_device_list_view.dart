@@ -220,6 +220,7 @@ class _SampleDeviceListViewState extends State<SampleDeviceListView> {
           const SizedBox(height: 12),
           FilterSearchDock(
             colors: colors,
+            searchCategory: 'devices',
             searchController: _searchController,
             searchFocusNode: _searchFocus,
             searchHint: 'Tìm thiết bị theo tên hoặc IP…',

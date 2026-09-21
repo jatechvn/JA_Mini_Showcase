@@ -155,8 +155,13 @@ class _SettingsTabSelector extends StatelessWidget {
       child: Row(
         children: [
           _buildItem(0, Icons.tune_rounded, language.t('tab_settings_ui')),
-          _buildItem(1, Icons.menu_book_rounded, language.t('tab_user_guide')),
-          _buildItem(2, Icons.info_outline_rounded, language.t('tab_about')),
+          _buildItem(
+            1,
+            Icons.system_update_alt_rounded,
+            language.t('tab_ota_update'),
+          ),
+          _buildItem(2, Icons.menu_book_rounded, language.t('tab_user_guide')),
+          _buildItem(3, Icons.info_outline_rounded, language.t('tab_about')),
         ],
       ),
     );
@@ -190,13 +195,17 @@ class _SettingsTabSelector extends StatelessWidget {
                 size: 14,
                 color: isSelected ? Colors.white : colors.textSecondary,
               ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : colors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : colors.textSecondary,
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -440,6 +449,836 @@ class _SettingsGlassSlider extends StatelessWidget {
   }
 }
 
+class _SettingsOtaUpdateTab extends StatefulWidget {
+  const _SettingsOtaUpdateTab({
+    required this.colors,
+    required this.theme,
+    required this.language,
+    required this.appVersion,
+    this.onUpdateFound,
+  });
+
+  final AppColors colors;
+  final ThemeProvider theme;
+  final LanguageProvider language;
+  final String appVersion;
+  final ValueChanged<UpdatePackageInfo?>? onUpdateFound;
+
+  @override
+  State<_SettingsOtaUpdateTab> createState() => _SettingsOtaUpdateTabState();
+}
+
+class _SettingsOtaUpdateTabState extends State<_SettingsOtaUpdateTab> {
+  final _serverPathController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _checkInterval = 'daily';
+  DateTime? _lastCheckTime;
+  bool _obscurePassword = true;
+  bool _isLoading = true;
+  bool _isTestingConnection = false;
+  bool? _connectionSuccess;
+  String? _connectionMessage;
+  bool _isCheckingUpdates = false;
+  UpdateCheckResult? _checkResult;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  @override
+  void dispose() {
+    _serverPathController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadConfig() async {
+    final config = await OtaUpdateService().getConfig();
+    if (mounted) {
+      setState(() {
+        _serverPathController.text = config.serverPath;
+        _usernameController.text = config.username;
+        _checkInterval = config.checkInterval;
+        _lastCheckTime = config.lastCheckTime;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<bool> _saveConfig({bool notify = true}) async {
+    setState(() => _isSaving = true);
+    final config = OtaUpdateConfig(
+      serverPath: _serverPathController.text.trim(),
+      username: _usernameController.text.trim(),
+      checkInterval: _checkInterval,
+      lastCheckTime: _lastCheckTime,
+    );
+    final password = _passwordController.text;
+    try {
+      await OtaUpdateService().saveConfig(config);
+      if (password.isNotEmpty) {
+        await OtaUpdateService().saveSmbCredential(
+          serverPath: config.serverPath,
+          username: config.username,
+          password: password,
+        );
+        if (mounted) _passwordController.clear();
+      }
+      if (mounted && notify) {
+        showAppToast(
+          context,
+          message: widget.language.t('action_save'),
+          colors: widget.colors,
+          icon: Icons.check_circle_rounded,
+        );
+      }
+      return true;
+    } catch (error) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: error.toString(),
+          colors: widget.colors,
+          icon: Icons.error_outline_rounded,
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _testConnection() async {
+    setState(() {
+      _isTestingConnection = true;
+      _connectionSuccess = null;
+      _connectionMessage = null;
+    });
+
+    try {
+      if (!await _saveConfig(notify: false)) {
+        if (mounted) setState(() => _isTestingConnection = false);
+        return;
+      }
+      final success = await OtaUpdateService().connectSmbShare(
+        path: _serverPathController.text.trim(),
+      );
+      if (mounted) {
+        setState(() {
+          _isTestingConnection = false;
+          _connectionSuccess = success;
+          _connectionMessage = success
+              ? widget.language.t('ota_connection_success')
+              : widget.language.t('ota_connection_failed', [
+                  'Truy cập thất bại / Access denied',
+                ]);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isTestingConnection = false;
+          _connectionSuccess = false;
+          _connectionMessage = widget.language.t('ota_connection_failed', [
+            e.toString(),
+          ]);
+        });
+      }
+    }
+  }
+
+  Future<void> _checkUpdatesNow() async {
+    setState(() {
+      _isCheckingUpdates = true;
+      _checkResult = null;
+    });
+
+    if (!await _saveConfig(notify: false)) {
+      if (mounted) setState(() => _isCheckingUpdates = false);
+      return;
+    }
+    final path = _serverPathController.text.trim();
+
+    try {
+      final result = await OtaUpdateService().checkForUpdates(
+        overrideServerPath: path,
+        isManual: true,
+      );
+      if (mounted) {
+        setState(() {
+          _isCheckingUpdates = false;
+          _checkResult = result;
+          _lastCheckTime = DateTime.now();
+        });
+        if (result.hasUpdate && result.packageInfo != null) {
+          widget.onUpdateFound?.call(result.packageInfo);
+          showGlassUpdateDialog(
+            context: context,
+            packageInfo: result.packageInfo!,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCheckingUpdates = false;
+          _checkResult = UpdateCheckResult(
+            hasUpdate: false,
+            currentVersion: widget.appVersion,
+            isConnectionSuccess: false,
+            errorMessage: e.toString(),
+          );
+        });
+      }
+    }
+  }
+
+  void _openConfigFolder() {
+    final file = OtaUpdateService().getConfigFile();
+    try {
+      if (Platform.isWindows) {
+        if (file.existsSync()) {
+          Process.run('explorer.exe', ['/select,', file.path]);
+        } else {
+          Process.run('explorer.exe', [file.parent.path]);
+        }
+      }
+    } catch (e) {
+      debugPrint('Could not open config folder: $e');
+    }
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    final mo = dt.month.toString().padLeft(2, '0');
+    final y = dt.year;
+    return '$h:$m $d/$mo/$y';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = widget.colors;
+    final language = widget.language;
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+    }
+
+    final intervalItems = [
+      GlassDropdownItem<String>(
+        value: 'daily',
+        label: language.t('interval_daily'),
+        icon: Icons.calendar_today_rounded,
+      ),
+      GlassDropdownItem<String>(
+        value: 'weekly',
+        label: language.t('interval_weekly'),
+        icon: Icons.view_week_rounded,
+      ),
+      GlassDropdownItem<String>(
+        value: 'monthly',
+        label: language.t('interval_monthly'),
+        icon: Icons.date_range_rounded,
+      ),
+      GlassDropdownItem<String>(
+        value: 'off',
+        label: language.t('interval_off'),
+        icon: Icons.power_settings_new_rounded,
+      ),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Version Status Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.subCardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: colors.accentCyan.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [colors.accentColor, colors.accentCyan],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primaryGlow.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.system_update_alt_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${language.t('ota_current_version')} v${widget.appVersion}',
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _lastCheckTime != null
+                                ? '${language.t('ota_last_checked')} ${_formatDateTime(_lastCheckTime!)}'
+                                : language.t('ota_never_checked'),
+                            style: TextStyle(
+                              color: colors.textMuted,
+                              fontSize: 11,
+                              fontFamily: 'JetBrains Mono',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GlowingActionButton(
+                      height: 34,
+                      colors: colors,
+                      icon: _isCheckingUpdates
+                          ? Icons.sync_rounded
+                          : Icons.refresh_rounded,
+                      label: _isCheckingUpdates
+                          ? language.t('ota_checking')
+                          : language.t('ota_check_now'),
+                      onPressed: _isCheckingUpdates ? null : _checkUpdatesNow,
+                    ),
+                  ],
+                ),
+                if (_checkResult != null) ...[
+                  const SizedBox(height: 12),
+                  if (_checkResult!.hasUpdate &&
+                      _checkResult!.packageInfo != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.accentEmerald.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: colors.accentEmerald.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 16,
+                            color: colors.accentEmerald,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              language.t('ota_update_available', [
+                                _checkResult!
+                                    .packageInfo!
+                                    .version
+                                    .displayVersion,
+                              ]),
+                              style: TextStyle(
+                                color: colors.accentEmerald,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              showGlassUpdateDialog(
+                                context: context,
+                                packageInfo: _checkResult!.packageInfo!,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.accentEmerald,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                language.t('ota_update_now'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_checkResult!.isConnectionSuccess)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colors.accentCyan.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: colors.accentCyan.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 16,
+                            color: colors.accentCyan,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              language.t('ota_no_updates', [
+                                'v${widget.appVersion}',
+                              ]),
+                              style: TextStyle(
+                                color: colors.accentCyan,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colors.accentAmber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: colors.accentAmber.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: colors.accentAmber,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _checkResult!.errorMessage ?? 'Check failed',
+                              style: TextStyle(
+                                color: colors.accentAmber,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 2. Server & Schedule Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.subCardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: colors.subCardBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  language.t('ota_title'),
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  language.t('ota_desc'),
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 11.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildInputField(
+                  label: language.t('ota_server_path'),
+                  controller: _serverPathController,
+                  hint: language.t('ota_server_path_hint'),
+                  colors: colors,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            language.t('ota_check_interval'),
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          GlassDropdown<String>(
+                            items: intervalItems,
+                            value: _checkInterval,
+                            onChanged: (val) async {
+                              setState(() => _checkInterval = val);
+                              await _saveConfig(notify: false);
+                            },
+                            colors: colors,
+                            enableSearch: false,
+                            borderRadius: 9,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: _openConfigFolder,
+                      borderRadius: BorderRadius.circular(9),
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: colors.cardBg.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(color: colors.subCardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.folder_open_rounded,
+                              size: 15,
+                              color: colors.accentCyan,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              language.t('ota_open_config_folder'),
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Credentials & Connection Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.subCardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: colors.subCardBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  language.t('ota_auth_title'),
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInputField(
+                        label: language.t('ota_username'),
+                        controller: _usernameController,
+                        hint: 'user',
+                        colors: colors,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildInputField(
+                        label: language.t('ota_password'),
+                        controller: _passwordController,
+                        hint: '••••••',
+                        obscureText: _obscurePassword,
+                        colors: colors,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_rounded
+                                : Icons.visibility_rounded,
+                            size: 16,
+                            color: colors.textMuted,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: _isTestingConnection ? null : _testConnection,
+                      borderRadius: BorderRadius.circular(9),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.accentCyan.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: colors.accentCyan.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isTestingConnection)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.wifi_find_rounded,
+                                size: 15,
+                                color: colors.accentCyan,
+                              ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _isTestingConnection
+                                  ? language.t('ota_testing_connection')
+                                  : language.t('ota_test_connection'),
+                              style: TextStyle(
+                                color: colors.accentCyan,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    InkWell(
+                      onTap: _isSaving ? null : () => _saveConfig(notify: true),
+                      borderRadius: BorderRadius.circular(9),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.subCardBg,
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(color: colors.subCardBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.save_rounded,
+                              size: 15,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              language.t('action_save'),
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_connectionSuccess != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color:
+                          (_connectionSuccess!
+                                  ? colors.accentEmerald
+                                  : colors.accentAmber)
+                              .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color:
+                            (_connectionSuccess!
+                                    ? colors.accentEmerald
+                                    : colors.accentAmber)
+                                .withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _connectionSuccess!
+                              ? Icons.check_circle_rounded
+                              : Icons.error_outline_rounded,
+                          size: 15,
+                          color: _connectionSuccess!
+                              ? colors.accentEmerald
+                              : colors.accentAmber,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _connectionMessage ?? '',
+                            style: TextStyle(
+                              color: _connectionSuccess!
+                                  ? colors.accentEmerald
+                                  : colors.accentAmber,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required AppColors colors,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: colors.cardBg.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: colors.subCardBorder),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  obscureText: obscureText,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 12,
+                    fontFamily: 'JetBrains Mono',
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    border: InputBorder.none,
+                    hintText: hint,
+                    hintStyle: TextStyle(
+                      color: colors.textMuted,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ),
+              ),
+              ?suffixIcon,
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SettingsUserGuideTab extends StatelessWidget {
   const _SettingsUserGuideTab({required this.colors, required this.language});
 
@@ -644,7 +1483,7 @@ class _SettingsAboutTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'v$appVersion • Release 2026-09-08',
+                        'v$appVersion • Release 2026-09-21',
                         style: TextStyle(
                           color: colors.textMuted,
                           fontSize: 11,

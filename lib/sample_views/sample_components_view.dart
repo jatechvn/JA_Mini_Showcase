@@ -5,6 +5,7 @@ import '../theme/theme_provider.dart';
 import '../modules/constants.dart';
 import '../widgets/glass_widgets.dart';
 import '../widgets/glass_dialog.dart';
+import '../widgets/glass_search_history_field.dart';
 import '../widgets/app_toast.dart';
 import '../widgets/command_palette.dart';
 
@@ -51,6 +52,10 @@ class _SampleComponentsViewState extends _SampleComponentsStateBase
 
           // Section 2: Buttons & Interactive Controls
           _buildButtonsSection(colors),
+          const SizedBox(height: 14),
+
+          // Section 2.5: Smart Search Box with History Overlay
+          _buildSmartSearchSection(colors),
           const SizedBox(height: 14),
 
           // Section 3: Badges, KbdTags & Wave Indicator

@@ -12,7 +12,7 @@
   <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.44.2-02569B?logo=flutter&logoColor=white">
   <img alt="Dart" src="https://img.shields.io/badge/Dart-3.12.2-0175C2?logo=dart&logoColor=white">
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20Desktop-0078D4?logo=windows&logoColor=white">
-  <img alt="Release" src="https://img.shields.io/badge/Release-v1.1.0-10B981">
+  <img alt="Release" src="https://img.shields.io/badge/Release-v1.2.0-10B981">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-lightgrey">
 </p>
 
@@ -32,6 +32,14 @@
 ---
 
 ## Core Capabilities
+
+### Glass appearance baseline
+
+Windows 10/11 light and dark color tokens match JA_MES_Tool, including the
+background, topbar, sidebar, cards, borders and mesh orbs. Auto detects hardware
+for reporting but always uses blur 20 and opacity 25% (cards), 85% (dialogs),
+86% (dropdowns). Manual Ultra/Balanced/Lite presets remain available; returning
+to Auto or resetting restores this baseline. Live tuning still overrides it.
 
 ### Keyboard shortcuts
 
@@ -82,6 +90,26 @@ Bindings live in `lib/modules/ui/app_shortcuts.dart` and use Flutter
 - **Live Glass Tuning:** Card, dialog, and dropdown blur/opacity controls with reset/save/cancel flow.
 - **Localized Runtime Help:** Vietnamese, English, and Chinese strings for About/User Guide, settings, tabs, tooltips, and status labels.
 - **Version Display:** Runtime version comes from `lib/modules/constants.dart` via `BuildInfo.version`.
+
+### LAN OTA updates
+
+- **Credential storage:** The Settings password field writes to Windows Credential Manager for the SMB server; `update_config.json` never stores a password. Existing plaintext `password` entries are removed when the app loads its configuration.
+- **Required manifest:** OTA only accepts an existing `version.json` containing a safe JA Mini Showcase ZIP name and a lowercase or uppercase SHA-256 digest. The downloaded local ZIP is hashed again before extraction.
+
+```json
+{
+  "version": "1.2.0",
+  "fileName": "JA_Mini_Showcase_1.2.0.zip",
+  "sha256": "<64-character SHA-256 hex digest>",
+  "releaseNotes": "Optional release notes"
+}
+```
+
+Generate the digest for a release package with:
+
+```powershell
+(Get-FileHash .\JA_Mini_Showcase_1.2.0.zip -Algorithm SHA256).Hash.ToLower()
+```
 
 ---
 
@@ -209,6 +237,7 @@ The in-app theme toggle updates Flutter-level colors immediately. Native Windows
 
 ## Changelog Recap
 
+- **v1.2.0:** Corporate LAN Over-The-Air (OTA) self-update mechanism with UNC SMB share mounting and atomic Robocopy installer, Windows Desktop 1-Click Installer & Uninstaller suite (`install.bat`, `uninstall.bat`, `uninstall.ps1`), hardware-adaptive performance tiers (High/Balanced/Lite), persistent search history repository, and 70 automated tests.
 - **v1.1.0:** Interactive Glass Terminal with Fedora 44 styling and command interpreter, centralized Global Keyboard Shortcuts engine (`Ctrl+K/1..5/F/L/Esc`), in-app About external links and User Guide terminal card, 37 automated tests.
 - **v1.0.1:** Logger lifecycle hardening, phased split of the largest UI files, docs/version/About/User Guide release sync.
 - **v1.0.0:** Initial JA-HUB UI showcase with Bento overview, component sandbox, device filters, telemetry samples, Dynamic Island navigation, glass tuning, Command Palette, and toast notifications.
@@ -222,10 +251,10 @@ Full history is available in [CHANGELOG.md](CHANGELOG.md).
 Current release metadata:
 
 ```text
-Version : 1.1.0+3
-Tag     : v1.1.0
+Version : 1.2.0+4
+Tag     : v1.2.0
 Target  : Windows x64
-Artifact: dist/JA_Mini_Showcase_v1.1.0_Windows_x64.zip
+Artifact: dist/JA_Mini_Showcase_v1.2.0_Windows_x64.zip
 ```
 
 Standard release checks:
