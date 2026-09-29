@@ -11,9 +11,12 @@ import 'widgets/app_toast.dart';
 import 'modules/build_info.dart';
 import 'modules/logger_config.dart';
 import 'modules/window_helper.dart';
+import 'modules/window_focus_service.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSizeBytes =
+      30 * 1024 * 1024; // 30 MB desktop cache limit
 
   if (args.contains('-debug') ||
       args.contains('--debug') ||
@@ -38,7 +41,20 @@ class JaMiniShowcaseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => WindowFocusService()..init()),
+        ChangeNotifierProvider(
+          create: (ctx) {
+            final theme = ThemeProvider();
+            final focus = ctx.read<WindowFocusService>();
+            if (focus.isEfficiencyMode) {
+              theme.setEfficiencyMode(true);
+            }
+            focus.addListener(() {
+              theme.setEfficiencyMode(focus.isEfficiencyMode);
+            });
+            return theme;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
       child: const _AppContent(),
@@ -74,6 +90,27 @@ class _AppContent extends StatelessWidget {
                 subtitle: 'Đổi chế độ giao diện 1-Click',
                 icon: Icons.brightness_4_rounded,
                 onSelect: () => theme.toggleTheme(),
+              ),
+              CommandPaletteItem(
+                label: 'Thử nghiệm Chế độ Tiết kiệm Điện (0 FPS)',
+                subtitle:
+                    'Bật/tắt mô phỏng Sleep Mode (Tắt Blur, Nền phẳng, Dừng Motion)',
+                icon: Icons.eco_rounded,
+                onSelect: () {
+                  final newMode = !theme.isEfficiencyMode;
+                  theme.setEfficiencyMode(newMode);
+                  showAppToast(
+                    ctx,
+                    colors: colors,
+                    message: newMode
+                        ? 'Đã bật Chế độ Tiết kiệm (0 FPS, Tắt Blur, Nền phẳng)'
+                        : 'Đã khôi phục Chế độ Hiệu năng Cao (Glass + Motion)',
+                    icon: newMode ? Icons.eco_rounded : Icons.bolt_rounded,
+                    accentColor: newMode
+                        ? colors.accentEmerald
+                        : colors.accentCyan,
+                  );
+                },
               ),
               CommandPaletteItem(
                 label: 'Khôi phục Glass Tuning',

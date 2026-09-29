@@ -4,6 +4,38 @@ All notable changes to **JA Mini Showcase** will be documented in this file.
 
 ---
 
+## [v1.3.0] - 2026-09-29
+
+### 🚀 Nâng cấp & Tính năng mới
+- **🌿 Chế độ Tiết kiệm Điện Năng Nâng Cao (Low-Power Efficiency Sleep Mode - 0 FPS):**
+  - Quản lý trạng thái focus cửa sổ qua `WindowFocusService` kết hợp hai tầng quan sát Native Win32 (`WindowListener`) và Flutter Lifecycle (`WidgetsBindingObserver`).
+  - Tự động chuyển đổi về chế độ Sleep khi cửa sổ mất focus (unfocused/blurred) hoặc bị thu nhỏ xuống Taskbar (minimized).
+  - Tự động tắt toàn bộ hiệu ứng kính mờ (Dynamic Zero-Blur: `cardBlur`, `dialogBlur`, `dropdownBlur` = 0.0) giúp GPU bỏ qua hoàn toàn các lệnh tính toán `BackdropFilter`.
+  - Chuyển `GlassScaffold` sang nền màu đặc phẳng (`#0F172A` / `#F8FAFC`), ẩn toàn bộ đốm màu `MeshOrb` nhằm loại bỏ gánh nặng hòa trộn Alpha của Windows DWM.
+  - Đóng băng 100% hoạt ảnh UI (`MeshOrb`, `WaveIndicator`, `BorderBeam`, `RotatingGlowBorder`, `AsymmetricMarqueeText`), hạ mức tiêu thụ render pipeline về đúng **0 FPS** và **~0% GPU**.
+  - Tác vụ ngầm (kiểm tra cập nhật OTA qua mạng LAN, kết nối network) vẫn duy trì hoạt động 100% không bị gián đoạn.
+  - Đèn báo trạng thái trực quan trên `DynamicIslandCapsule`: Chuyển sang biểu tượng lá xanh (`Icons.eco_rounded`), chữ `🌿 TIẾT KIỆM (0 FPS)` và phụ đề `Đã dừng hiệu ứng`.
+  - Bổ sung lệnh phím tắt trong Command Palette (`Ctrl+K`): **"Thử nghiệm Chế độ Tiết kiệm Điện (0 FPS)"** giúp kích hoạt mô phỏng trực tiếp tức thì.
+- **💎 Bộ Nhận Diện Thương Hiệu Mới & 3D Crystal Prism Logo:**
+  - Thiết kế và đóng gói biểu tượng ứng dụng lăng kính thủy tinh 3D tinh xảo đa độ phân giải (`windows/runner/resources/app_icon.ico` và `assets/logo.ico`) chuẩn Windows gồm 256x256, 128x128, 64x64, 48x48, 32x32, 16x16.
+  - Tích hợp biểu tượng lăng kính 3D phát quang (`assets/logo.png`) lên góc trên bên trái thanh Header chính của Dashboard và hộp thoại About / Settings.
+  - Khai báo chuẩn `assets/` trong `pubspec.yaml`.
+- **⚡ Tinh Chỉnh Giao Diện Cập Nhật OTA:**
+  - Nâng cấp các tùy chọn cập nhật trong OTA từ dropdown list thành các nút chọn nhanh (Quick-action buttons) trực quan, giảm số thao tác click chuột.
+
+### 🧪 Testing & Quality Assurance
+- Bổ sung bộ kiểm thử chuyên sâu cho chế độ tiết kiệm điện:
+  - `window_focus_service_test.dart` (7 tests).
+  - `theme_efficiency_test.dart` (3 tests).
+  - `animation_efficiency_test.dart` (2 tests).
+- Đảm bảo 100% các bài test hồi quy tính năng cũ vượt qua thành công: **82/82 tests PASS**.
+- `flutter analyze` đạt tuyệt đối `No issues found!`.
+
+### 📦 Phát hành
+- Đồng bộ version 1.3.0+5 trong `pubspec.yaml`, `lib/modules/constants.dart`, `ABOUT.txt`, `README.md`, `RELEASE_NOTES.md`, `USERGUIDE.md`.
+
+---
+
 ## [v1.2.0] - 2026-09-21
 
 ### 🚀 Nâng cấp & Tính năng mới

@@ -34,12 +34,14 @@ class _BorderBeamState extends State<BorderBeam>
   )..repeat();
 
   late final AppLifecycleListener _lifecycleListener;
+  bool _lastEfficiency = false;
 
   @override
   void initState() {
     super.initState();
     _lifecycleListener = AppLifecycleListener(
       onStateChange: (state) {
+        if (_lastEfficiency) return;
         switch (state) {
           case AppLifecycleState.hidden:
           case AppLifecycleState.paused:
@@ -52,6 +54,28 @@ class _BorderBeamState extends State<BorderBeam>
         }
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    bool isEfficiency = false;
+    try {
+      isEfficiency = context.watch<ThemeProvider>().isEfficiencyMode;
+    } catch (_) {
+      try {
+        isEfficiency = context.watch<WindowFocusService>().isEfficiencyMode;
+      } catch (_) {}
+    }
+
+    if (isEfficiency != _lastEfficiency) {
+      _lastEfficiency = isEfficiency;
+      if (isEfficiency) {
+        if (_controller.isAnimating) _controller.stop();
+      } else {
+        if (!_controller.isAnimating) _controller.repeat();
+      }
+    }
   }
 
   @override
@@ -190,7 +214,7 @@ class _RotatingGlowBorderState extends State<RotatingGlowBorder>
 
     _lifecycleListener = AppLifecycleListener(
       onStateChange: (state) {
-        if (!mounted || !widget.isActive) return;
+        if (!mounted || !widget.isActive || _lastEfficiency) return;
         switch (state) {
           case AppLifecycleState.hidden:
           case AppLifecycleState.paused:
@@ -203,6 +227,30 @@ class _RotatingGlowBorderState extends State<RotatingGlowBorder>
         }
       },
     );
+  }
+
+  bool _lastEfficiency = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    bool isEfficiency = false;
+    try {
+      isEfficiency = context.watch<ThemeProvider>().isEfficiencyMode;
+    } catch (_) {
+      try {
+        isEfficiency = context.watch<WindowFocusService>().isEfficiencyMode;
+      } catch (_) {}
+    }
+
+    if (isEfficiency != _lastEfficiency) {
+      _lastEfficiency = isEfficiency;
+      if (isEfficiency) {
+        if (_controller.isAnimating) _controller.stop();
+      } else {
+        if (widget.isActive && !_controller.isAnimating) _controller.repeat();
+      }
+    }
   }
 
   @override

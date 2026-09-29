@@ -62,9 +62,37 @@ class _AsymmetricMarqueeTextState extends State<AsymmetricMarqueeText> {
     }
   }
 
+  bool _lastEfficiency = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    bool isEfficiency = false;
+    try {
+      isEfficiency = context.watch<ThemeProvider>().isEfficiencyMode;
+    } catch (_) {
+      try {
+        isEfficiency = context.watch<WindowFocusService>().isEfficiencyMode;
+      } catch (_) {}
+    }
+
+    if (isEfficiency != _lastEfficiency) {
+      _lastEfficiency = isEfficiency;
+      if (isEfficiency) {
+        _timer?.cancel();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isDisposed && mounted) {
+            _scheduleStart();
+          }
+        });
+      }
+    }
+  }
+
   void _scheduleStart() {
     _timer?.cancel();
-    if (_isDisposed || !mounted) return;
+    if (_isDisposed || !mounted || _lastEfficiency) return;
     if (!_scrollController.hasClients) {
       _timer = Timer(const Duration(milliseconds: 150), _scheduleStart);
       return;

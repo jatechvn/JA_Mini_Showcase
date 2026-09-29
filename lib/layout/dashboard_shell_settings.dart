@@ -671,29 +671,6 @@ class _SettingsOtaUpdateTabState extends State<_SettingsOtaUpdateTab> {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
 
-    final intervalItems = [
-      GlassDropdownItem<String>(
-        value: 'daily',
-        label: language.t('interval_daily'),
-        icon: Icons.calendar_today_rounded,
-      ),
-      GlassDropdownItem<String>(
-        value: 'weekly',
-        label: language.t('interval_weekly'),
-        icon: Icons.view_week_rounded,
-      ),
-      GlassDropdownItem<String>(
-        value: 'monthly',
-        label: language.t('interval_monthly'),
-        icon: Icons.date_range_rounded,
-      ),
-      GlassDropdownItem<String>(
-        value: 'off',
-        label: language.t('interval_off'),
-        icon: Icons.power_settings_new_rounded,
-      ),
-    ];
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -949,56 +926,35 @@ class _SettingsOtaUpdateTabState extends State<_SettingsOtaUpdateTab> {
                 ),
                 const SizedBox(height: 12),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            language.t('ota_check_interval'),
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          GlassDropdown<String>(
-                            items: intervalItems,
-                            value: _checkInterval,
-                            onChanged: (val) async {
-                              setState(() => _checkInterval = val);
-                              await _saveConfig(notify: false);
-                            },
-                            colors: colors,
-                            enableSearch: false,
-                            borderRadius: 9,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      language.t('ota_check_interval'),
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 12),
                     InkWell(
                       onTap: _openConfigFolder,
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.cardBg.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(9),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: colors.subCardBorder),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.folder_open_rounded,
-                              size: 15,
+                              size: 14,
                               color: colors.accentCyan,
                             ),
                             const SizedBox(width: 6),
@@ -1015,6 +971,18 @@ class _SettingsOtaUpdateTabState extends State<_SettingsOtaUpdateTab> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                _OtaIntervalSelector(
+                  selectedInterval: _checkInterval,
+                  colors: colors,
+                  language: language,
+                  onChanged: (val) async {
+                    if (_checkInterval != val) {
+                      setState(() => _checkInterval = val);
+                      await _saveConfig(notify: false);
+                    }
+                  },
                 ),
               ],
             ),
@@ -1279,6 +1247,148 @@ class _SettingsOtaUpdateTabState extends State<_SettingsOtaUpdateTab> {
   }
 }
 
+class _OtaIntervalSelector extends StatelessWidget {
+  final String selectedInterval;
+  final AppColors colors;
+  final LanguageProvider language;
+  final ValueChanged<String> onChanged;
+
+  const _OtaIntervalSelector({
+    required this.selectedInterval,
+    required this.colors,
+    required this.language,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      _IntervalOption(
+        value: 'daily',
+        label: language.t('interval_daily'),
+        icon: Icons.calendar_today_rounded,
+      ),
+      _IntervalOption(
+        value: 'weekly',
+        label: language.t('interval_weekly'),
+        icon: Icons.view_week_rounded,
+      ),
+      _IntervalOption(
+        value: 'monthly',
+        label: language.t('interval_monthly'),
+        icon: Icons.date_range_rounded,
+      ),
+      _IntervalOption(
+        value: 'off',
+        label: language.t('interval_off'),
+        icon: Icons.power_settings_new_rounded,
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.cardBg.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.subCardBorder),
+      ),
+      child: Row(
+        children: options.map((opt) {
+          final isSelected = selectedInterval == opt.value;
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => onChanged(opt.value),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? LinearGradient(
+                              colors: [
+                                colors.accentColor,
+                                colors.accentCyan.withValues(alpha: 0.85),
+                              ],
+                            )
+                          : null,
+                      color: isSelected
+                          ? null
+                          : colors.subCardBg.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? colors.accentCyan.withValues(alpha: 0.5)
+                            : colors.subCardBorder.withValues(alpha: 0.35),
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: colors.accentColor.withValues(
+                                  alpha: 0.28,
+                                ),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          opt.icon,
+                          size: 13,
+                          color: isSelected
+                              ? Colors.white
+                              : colors.textSecondary,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            opt.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : colors.textSecondary,
+                              fontSize: 11.5,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _IntervalOption {
+  final String value;
+  final String label;
+  final IconData icon;
+
+  const _IntervalOption({
+    required this.value,
+    required this.label,
+    required this.icon,
+  });
+}
+
 class _SettingsUserGuideTab extends StatelessWidget {
   const _SettingsUserGuideTab({required this.colors, required this.language});
 
@@ -1421,27 +1531,40 @@ class _SettingsAboutTab extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colors.accentColor, colors.accentCyan],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primaryGlow.withValues(alpha: 0.3),
-                        blurRadius: 10,
+                        color: colors.primaryGlow.withValues(alpha: 0.35),
+                        blurRadius: 12,
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      'JA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colors.accentColor, colors.accentCyan],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'JA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
                   ),

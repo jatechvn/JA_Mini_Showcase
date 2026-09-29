@@ -17,6 +17,7 @@ class _WaveIndicatorState extends State<WaveIndicator>
   )..repeat(reverse: true);
 
   late final AppLifecycleListener _lifecycleListener;
+  bool _lastEfficiency = false;
 
   @override
   void initState() {
@@ -26,6 +27,7 @@ class _WaveIndicatorState extends State<WaveIndicator>
     // UI_DESIGN_Sample.html (0% background CPU when document.hidden).
     _lifecycleListener = AppLifecycleListener(
       onStateChange: (state) {
+        if (_lastEfficiency) return;
         switch (state) {
           case AppLifecycleState.hidden:
           case AppLifecycleState.paused:
@@ -38,6 +40,28 @@ class _WaveIndicatorState extends State<WaveIndicator>
         }
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    bool isEfficiency = false;
+    try {
+      isEfficiency = context.watch<ThemeProvider>().isEfficiencyMode;
+    } catch (_) {
+      try {
+        isEfficiency = context.watch<WindowFocusService>().isEfficiencyMode;
+      } catch (_) {}
+    }
+
+    if (isEfficiency != _lastEfficiency) {
+      _lastEfficiency = isEfficiency;
+      if (isEfficiency) {
+        if (_controller.isAnimating) _controller.stop();
+      } else {
+        if (!_controller.isAnimating) _controller.repeat(reverse: true);
+      }
+    }
   }
 
   @override
@@ -101,6 +125,7 @@ class DynamicIslandCapsule extends StatelessWidget {
   final String? subText;
   final VoidCallback? onTap;
   final Color? customColor;
+  final bool isEfficiencyMode;
 
   const DynamicIslandCapsule({
     super.key,
@@ -110,6 +135,7 @@ class DynamicIslandCapsule extends StatelessWidget {
     this.subText,
     this.onTap,
     this.customColor,
+    this.isEfficiencyMode = false,
   });
 
   @override
@@ -129,6 +155,8 @@ class DynamicIslandCapsule extends StatelessWidget {
             border: Border.all(
               color: isRunning
                   ? activeColor.withValues(alpha: 0.45)
+                  : isEfficiencyMode
+                  ? colors.accentEmerald.withValues(alpha: 0.45)
                   : colors.subCardBorder,
             ),
             boxShadow: [
@@ -155,6 +183,8 @@ class DynamicIslandCapsule extends StatelessWidget {
                     boxShadow: [BoxShadow(color: activeColor, blurRadius: 6)],
                   ),
                 ),
+              ] else if (isEfficiencyMode) ...[
+                Icon(Icons.eco_rounded, size: 13, color: colors.accentEmerald),
               ] else ...[
                 Container(
                   width: 6,
@@ -167,11 +197,15 @@ class DynamicIslandCapsule extends StatelessWidget {
               ],
               const SizedBox(width: 6),
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 100),
+                constraints: const BoxConstraints(maxWidth: 135),
                 child: AsymmetricMarqueeText(
                   text: statusText,
                   style: TextStyle(
-                    color: isRunning ? activeColor : colors.textMuted,
+                    color: isRunning
+                        ? activeColor
+                        : isEfficiencyMode
+                        ? colors.accentEmerald
+                        : colors.textMuted,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'JetBrains Mono',
@@ -182,20 +216,26 @@ class DynamicIslandCapsule extends StatelessWidget {
               if (subText != null && subText!.isNotEmpty) ...[
                 const SizedBox(width: 5),
                 Container(
-                  constraints: const BoxConstraints(maxWidth: 90),
+                  constraints: const BoxConstraints(maxWidth: 110),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 5,
                     vertical: 1.5,
                   ),
                   decoration: BoxDecoration(
-                    color: colors.subCardBorder.withValues(alpha: 0.2),
+                    color:
+                        (isEfficiencyMode
+                                ? colors.accentEmerald
+                                : colors.subCardBorder)
+                            .withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: AsymmetricMarqueeText(
                     text: subText!,
                     style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 10.5,
+                      color: isEfficiencyMode
+                          ? colors.accentEmerald
+                          : colors.textSecondary,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'JetBrains Mono',
                     ),

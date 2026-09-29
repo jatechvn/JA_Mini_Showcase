@@ -101,7 +101,9 @@ class _DashboardShellState extends State<DashboardShell> {
       },
       child: GlassScaffold(
         colors: colors,
-        header: _buildTopHeader(context, theme, language, colors, isMobile),
+        header: RepaintBoundary(
+          child: _buildTopHeader(context, theme, language, colors, isMobile),
+        ),
         body: Stack(
           children: [
             Padding(
@@ -118,13 +120,15 @@ class _DashboardShellState extends State<DashboardShell> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: MobileDockNav(
-                  colors: colors,
-                  currentIndex: _currentIndex,
-                  tabs: language.tabLabels,
-                  icons: _tabIcons,
-                  onTabSelected: (index) =>
-                      setState(() => _currentIndex = index),
+                child: RepaintBoundary(
+                  child: MobileDockNav(
+                    colors: colors,
+                    currentIndex: _currentIndex,
+                    tabs: language.tabLabels,
+                    icons: _tabIcons,
+                    onTabSelected: (index) =>
+                        setState(() => _currentIndex = index),
+                  ),
                 ),
               ),
           ],
@@ -188,12 +192,7 @@ class _DashboardShellState extends State<DashboardShell> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colors.accentColor, colors.accentCyan],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(9),
                     boxShadow: [
                       BoxShadow(
                         color: colors.primaryGlow.withValues(alpha: 0.4),
@@ -202,14 +201,33 @@ class _DashboardShellState extends State<DashboardShell> {
                       ),
                     ],
                   ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'JA',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13.5,
-                      letterSpacing: 0.5,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(9),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      width: 32,
+                      height: 32,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colors.accentColor, colors.accentCyan],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'JA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13.5,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -291,13 +309,26 @@ class _DashboardShellState extends State<DashboardShell> {
           // Dynamic Island Status Capsule
           DynamicIslandCapsule(
             colors: colors,
-            isRunning: _isServiceRunning,
-            statusText: _isServiceRunning
-                ? language.t('status_live')
-                : language.t('status_standby'),
-            subText: (!isMobile && screenWidth > 960 && _isServiceRunning)
-                ? language.t('status_devices')
-                : null,
+            isRunning: !theme.isEfficiencyMode && _isServiceRunning,
+            isEfficiencyMode: theme.isEfficiencyMode,
+            statusText: theme.isEfficiencyMode
+                ? (language.currentLanguage.code == 'EN'
+                      ? '🌿 SLEEP (0 FPS)'
+                      : language.currentLanguage.code == 'CN'
+                      ? '🌿 节能休眠 (0 FPS)'
+                      : '🌿 TIẾT KIỆM (0 FPS)')
+                : (_isServiceRunning
+                      ? language.t('status_live')
+                      : language.t('status_standby')),
+            subText: theme.isEfficiencyMode
+                ? (language.currentLanguage.code == 'EN'
+                      ? 'Effects Paused'
+                      : language.currentLanguage.code == 'CN'
+                      ? '特效已暂停'
+                      : 'Đã dừng hiệu ứng')
+                : ((!isMobile && screenWidth > 960 && _isServiceRunning)
+                      ? language.t('status_devices')
+                      : null),
             onTap: () => setState(() => _currentIndex = 0),
           ),
 

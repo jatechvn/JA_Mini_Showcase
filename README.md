@@ -12,7 +12,7 @@
   <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.44.2-02569B?logo=flutter&logoColor=white">
   <img alt="Dart" src="https://img.shields.io/badge/Dart-3.12.2-0175C2?logo=dart&logoColor=white">
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20Desktop-0078D4?logo=windows&logoColor=white">
-  <img alt="Release" src="https://img.shields.io/badge/Release-v1.2.0-10B981">
+  <img alt="Release" src="https://img.shields.io/badge/Release-v1.3.0-10B981">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-lightgrey">
 </p>
 
@@ -237,6 +237,7 @@ The in-app theme toggle updates Flutter-level colors immediately. Native Windows
 
 ## Changelog Recap
 
+- **v1.3.0:** Low-Power Efficiency Sleep Mode (0 FPS) with dual-layer OS event detection (`WindowFocusService`), dynamic zero-blur and background solid state, UI animation freezing, new 3D crystal prism icon branding (`app_icon.ico` & in-app header/about logos), OTA quick selection buttons, and 82 automated tests passing.
 - **v1.2.0:** Corporate LAN Over-The-Air (OTA) self-update mechanism with UNC SMB share mounting and atomic Robocopy installer, Windows Desktop 1-Click Installer & Uninstaller suite (`install.bat`, `uninstall.bat`, `uninstall.ps1`), hardware-adaptive performance tiers (High/Balanced/Lite), persistent search history repository, and 70 automated tests.
 - **v1.1.0:** Interactive Glass Terminal with Fedora 44 styling and command interpreter, centralized Global Keyboard Shortcuts engine (`Ctrl+K/1..5/F/L/Esc`), in-app About external links and User Guide terminal card, 37 automated tests.
 - **v1.0.1:** Logger lifecycle hardening, phased split of the largest UI files, docs/version/About/User Guide release sync.

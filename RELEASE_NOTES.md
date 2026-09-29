@@ -1,31 +1,29 @@
-TAG=v1.2.0
-TITLE=JA Mini Showcase v1.2.0 - Corporate LAN OTA Updates, Desktop Installer Suite & Hardware Performance Tiers
+TAG=v1.3.0
+TITLE=JA Mini Showcase v1.3.0 - Low-Power Efficiency Sleep Mode (0 FPS) & 3D Crystal Branding
 BODY=
-## JA Mini Showcase v1.2.0
+## JA Mini Showcase v1.3.0
 
-Bản phát hành v1.2.0 mang đến hệ thống tự động cập nhật mạng nội bộ Corporate LAN OTA Updates, trọn bộ công cụ Cài đặt & Gỡ bỏ chuẩn Windows 1-Click (không cần Admin), cơ chế tối ưu hiệu năng Hardware Performance Tiers cho Mini PC, và kho lưu trữ lịch sử tìm kiếm Search History.
+Bản phát hành v1.3.0 mang đến Chế độ Tiết kiệm Điện Năng Nâng Cao (Low-Power Efficiency Sleep Mode - 0 FPS) đóng băng hoạt ảnh và tắt blur khi ứng dụng không active, Bộ nhận diện thương hiệu 3D Crystal Prism Logo mới đa độ phân giải, và các nút chọn nhanh OTA tiện lợi.
 
 ### 🚀 Nâng cấp & Tính năng chính
-- **Corporate LAN Over-The-Air (OTA) Updates:**
-  - Tích hợp `OtaUpdateService` kết nối UNC/SMB share (`net use` hỗ trợ credentials), phân tích Semantic Versioning và kiểm tra tính toàn vẹn gói cập nhật bằng mã băm SHA256.
-  - Kịch bản tự cập nhật nguyên tử `apply_update.bat` dùng Robocopy tắt app, đè file nhị phân, bảo vệ toàn vẹn logs/configs và tự khởi động lại.
-  - Dialog cập nhật Bento Frosted Glass đẹp mắt (`GlassUpdateDialog`) kèm thanh tiến trình và release notes.
-  - Nút badge OTA mở rộng động trên TopBar và Tab cấu hình OTA chuyên biệt trong cửa sổ Settings.
-- **Windows Desktop Installer & Uninstaller Suite:**
-  - Bộ cài đặt 1-Click `install.bat` triển khai vào `%LOCALAPPDATA%\Programs\JA_Mini_Showcase` không cần quyền Admin, tạo Shortcut Desktop, Start Menu và đăng ký Windows Control Panel. Hỗ trợ tham số `/silent`.
-  - Bộ gỡ bỏ `uninstall.bat` & `uninstall.ps1` staging qua `%TEMP%` chống lỗi khóa file, hỏi bảo lưu dữ liệu và dọn dẹp triệt để.
-- **Hardware-Adaptive Performance Tiers:**
-  - 3 cấp độ hiệu năng High / Balanced / Low (Lite) tự nhận diện phần cứng, tối ưu độ mờ kính (blur) và tốc độ vẽ để chạy mượt mà ngay cả trên Mini PC cấu hình thấp.
-- **Search History & Glass Search Field:**
-  - Lưu vết lịch sử tìm kiếm người dùng vào file JSON cục bộ kèm gợi ý dropdown và nút xóa nhanh.
-- **Đồng bộ đa ngôn ngữ:**
-  - Bổ sung bản dịch Tiếng Việt, Tiếng Anh, Tiếng Trung cho toàn bộ tính năng OTA và Performance Tiers.
+- **Low-Power Efficiency Sleep Mode (0 FPS):**
+  - Quản lý trạng thái focus cửa sổ qua `WindowFocusService` (kết hợp `WindowListener` native Win32 và `WidgetsBindingObserver` Flutter lifecycle).
+  - Tự động tắt toàn bộ hiệu ứng kính mờ (Dynamic Zero-Blur: `cardBlur`, `dialogBlur`, `dropdownBlur` = 0.0) khi mất focus hoặc thu nhỏ xuống taskbar, giải phóng hoàn toàn gánh nặng GPU `BackdropFilter`.
+  - Nền chuyển sang màu phẳng đặc, ẩn các quả cầu `MeshOrb` để triệt tiêu chi phí pha trộn alpha của Windows DWM.
+  - Đóng băng 100% hoạt ảnh UI (`MeshOrb`, `WaveIndicator`, `BorderBeam`, `RotatingGlowBorder`, `AsymmetricMarqueeText`), hạ mức tiêu thụ render pipeline về đúng **0 FPS** và **~0% GPU**.
+  - Các tác vụ ngầm (OTA LAN update, network sockets) vẫn duy trì hoạt động 100% không bị ngắt.
+  - Đèn báo trạng thái trực quan trên `DynamicIslandCapsule`: Biểu tượng lá xanh (`Icons.eco_rounded`), dòng chữ `🌿 TIẾT KIỆM (0 FPS)` và phụ đề `Đã dừng hiệu ứng`.
+  - Phím tắt mô phỏng nhanh trong Command Palette (`Ctrl+K`): **"Thử nghiệm Chế độ Tiết kiệm Điện (0 FPS)"**.
+- **3D Crystal Prism Logo & Brand Identity:**
+  - Biểu tượng ứng dụng lăng kính thủy tinh 3D tinh xảo đa độ phân giải (`app_icon.ico` & `logo.ico`: 256, 128, 64, 48, 32, 16 px).
+  - Tích hợp logo 3D sắc nét (`logo.png`) vào góc trên bên trái thanh Header chính của Dashboard và hộp thoại About / Settings.
+- **OTA Quick Selection Buttons:**
+  - Cải tiến giao diện chọn phiên bản cập nhật OTA từ danh sách dropdown sang các nút chọn nhanh (Quick-action buttons).
 
 ### 🧪 Xác minh & Kiểm thử (Verification)
 - `dart analyze`: Đạt tuyệt đối (0 issues)
 - `dart format .`: Đã định dạng chuẩn
-- `flutter test`: 70/70 tests passed (100%)
-- Live installer verification: Đã kiểm thử cài đặt và gỡ cài đặt thành công trên môi trường Windows thực tế.
+- `flutter test`: 82/82 tests passed (100%)
 
 ### 📦 Cài đặt
-Giải nén file `JA_Mini_Showcase_v1.2.0_Windows_x64.zip`, chạy `install.bat` để cài đặt ứng dụng vào máy tính, hoặc chạy trực tiếp `ja_mini_showcase.exe` (bản portable sẵn sàng chạy ngay).
+Giải nén file `JA_Mini_Showcase_v1.3.0_Windows_x64.zip`, chạy `install.bat` để cài đặt ứng dụng vào máy tính, hoặc chạy trực tiếp `ja_mini_showcase.exe` (bản portable sẵn sàng chạy ngay).

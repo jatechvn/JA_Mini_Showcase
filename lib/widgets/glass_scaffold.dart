@@ -50,9 +50,13 @@ class GlassScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedColors = colors ?? _resolveColors(context);
+    final isEfficiency = _resolveEfficiency(context);
+    final effectiveBg = isEfficiency
+        ? _resolveSolidBg(context, resolvedColors)
+        : resolvedColors.bgPrimary;
 
     return Scaffold(
-      backgroundColor: resolvedColors.bgPrimary, // Colors.transparent
+      backgroundColor: effectiveBg,
       appBar: appBar,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       floatingActionButton: floatingActionButton,
@@ -60,8 +64,8 @@ class GlassScaffold extends StatelessWidget {
       bottomNavigationBar: bottomNavigationBar,
       body: Stack(
         children: [
-          // 1. Mesh Gradient Base Tint (Translucent)
-          if (enableGradientTint)
+          // 1. Mesh Gradient Base Tint (Translucent) - only active in normal mode
+          if (enableGradientTint && !isEfficiency)
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -78,8 +82,8 @@ class GlassScaffold extends StatelessWidget {
               ),
             ),
 
-          // 2. GPU-Composited Floating Mesh Orbs (Animated ambient backdrop)
-          if (enableMeshOrbs)
+          // 2. GPU-Composited Floating Mesh Orbs - completely hidden in efficiency mode
+          if (enableMeshOrbs && !isEfficiency)
             Positioned.fill(child: MeshBackground(colors: resolvedColors)),
 
           Positioned.fill(
@@ -98,6 +102,29 @@ class GlassScaffold extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static bool _resolveEfficiency(BuildContext context) {
+    try {
+      final theme = context.watch<ThemeProvider>();
+      return theme.isEfficiencyMode;
+    } catch (_) {
+      try {
+        final focus = context.watch<WindowFocusService>();
+        return focus.isEfficiencyMode;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  static Color _resolveSolidBg(BuildContext context, AppColors colors) {
+    try {
+      final theme = context.read<ThemeProvider>();
+      return theme.isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    } catch (_) {
+      return const Color(0xFF0F172A);
+    }
   }
 
   static AppColors _resolveColors(BuildContext context) {

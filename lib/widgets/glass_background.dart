@@ -25,6 +25,7 @@ class _MeshOrbState extends State<MeshOrb> with SingleTickerProviderStateMixin {
   )..repeat(reverse: true);
 
   late final AppLifecycleListener _lifecycleListener;
+  bool _lastEfficiency = false;
 
   @override
   void initState() {
@@ -34,6 +35,7 @@ class _MeshOrbState extends State<MeshOrb> with SingleTickerProviderStateMixin {
     // (`visibilitychange` -> orb.animationPlayState = 'paused', 0% background CPU).
     _lifecycleListener = AppLifecycleListener(
       onStateChange: (state) {
+        if (_lastEfficiency) return;
         switch (state) {
           case AppLifecycleState.hidden:
           case AppLifecycleState.paused:
@@ -46,6 +48,28 @@ class _MeshOrbState extends State<MeshOrb> with SingleTickerProviderStateMixin {
         }
       },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    bool isEfficiency = false;
+    try {
+      isEfficiency = context.watch<ThemeProvider>().isEfficiencyMode;
+    } catch (_) {
+      try {
+        isEfficiency = context.watch<WindowFocusService>().isEfficiencyMode;
+      } catch (_) {}
+    }
+
+    if (isEfficiency != _lastEfficiency) {
+      _lastEfficiency = isEfficiency;
+      if (isEfficiency) {
+        if (_controller.isAnimating) _controller.stop();
+      } else {
+        if (!_controller.isAnimating) _controller.repeat(reverse: true);
+      }
+    }
   }
 
   @override

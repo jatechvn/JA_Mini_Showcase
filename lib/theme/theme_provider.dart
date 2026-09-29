@@ -198,12 +198,39 @@ class ThemeProvider extends ChangeNotifier {
 
   bool get isWin11 => _isWin11;
 
-  double get cardBlur => _cardBlur;
-  double get cardOpacity => _cardOpacity;
-  double get dialogBlur => _dialogBlur;
-  double get dialogOpacity => _dialogOpacity;
-  double get dropdownBlur => _dropdownBlur;
-  double get dropdownOpacity => _dropdownOpacity;
+  bool _isEfficiencyMode = false;
+
+  bool get isEfficiencyMode => _isEfficiencyMode;
+
+  /// Updates efficiency mode state (called when window loses/regains focus or is minimized)
+  void setEfficiencyMode(bool value) {
+    if (_isEfficiencyMode != value) {
+      _isEfficiencyMode = value;
+      notifyListeners();
+    }
+  }
+
+  /// Synchronize efficiency mode state and notify listeners
+  void syncEfficiencyMode(bool value) {
+    setEfficiencyMode(value);
+  }
+
+  /// When in Efficiency Mode, blur is completely zeroed to disable BackdropFilter on GPU,
+  /// and opacities are boosted to near solid (0.95+) for clean contrast without alpha blend.
+  double get cardBlur => _isEfficiencyMode ? 0.0 : _cardBlur;
+  double get cardOpacity => _isEfficiencyMode ? 0.95 : _cardOpacity;
+  double get dialogBlur => _isEfficiencyMode ? 0.0 : _dialogBlur;
+  double get dialogOpacity => _isEfficiencyMode ? 0.98 : _dialogOpacity;
+  double get dropdownBlur => _isEfficiencyMode ? 0.0 : _dropdownBlur;
+  double get dropdownOpacity => _isEfficiencyMode ? 0.98 : _dropdownOpacity;
+
+  /// Raw user-configured or hardware-profiled values preserved even during efficiency mode
+  double get rawCardBlur => _cardBlur;
+  double get rawCardOpacity => _cardOpacity;
+  double get rawDialogBlur => _dialogBlur;
+  double get rawDialogOpacity => _dialogOpacity;
+  double get rawDropdownBlur => _dropdownBlur;
+  double get rawDropdownOpacity => _dropdownOpacity;
 
   AppColors get colors {
     if (isDark) {
