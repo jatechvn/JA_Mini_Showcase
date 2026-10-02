@@ -7,6 +7,8 @@ part of 'glass_widgets.dart';
 /// - Hold at end for [pauseEnd] (e.g. 1400ms).
 /// - Smoothly scrolls back to start with [returnCurve].
 /// - Zero performance overhead when text fits within bounds.
+/// - Uses Session Epoch Guard and offset freezing when paused/blurred to
+///   guarantee 0 ghost callback leaks and smooth resume without jumping back to 0.
 class AsymmetricMarqueeText extends StatefulWidget {
   final String text;
   final TextStyle? style;
@@ -36,33 +38,57 @@ class _AsymmetricMarqueeTextState extends State<AsymmetricMarqueeText> {
   Timer? _timer;
   bool _isDisposed = false;
 
+  // Session Epoch Guard & Offset Freeze state
+  int _sessionEpoch = 0;
+  bool _isPaused = false;
+  bool _isMovingForward = true;
+  bool _lastEfficiency = false;
+
+  bool get _shouldAnimate {
+    if (_lastEfficiency) return false;
+    return AppPowerManager.instance.shouldAnimateMarquee;
+  }
+
   @override
   void initState() {
     super.initState();
+    AppPowerManager.instance.marqueeAnimationNotifier.addListener(
+      _onPowerManagerChanged,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_isDisposed && mounted) {
+      if (!_isDisposed && mounted && _shouldAnimate) {
         _scheduleStart();
       }
     });
+  }
+
+  void _onPowerManagerChanged() {
+    if (!mounted || _isDisposed) return;
+    final should = _shouldAnimate;
+    if (should && _isPaused) {
+      _resumeMarquee();
+    } else if (!should && !_isPaused) {
+      _pauseMarquee();
+    }
   }
 
   @override
   void didUpdateWidget(covariant AsymmetricMarqueeText oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text) {
+      _sessionEpoch++;
       _timer?.cancel();
+      _timer = null;
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(0);
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_isDisposed && mounted) {
+        if (!_isDisposed && mounted && _shouldAnimate) {
           _scheduleStart();
         }
       });
     }
   }
-
-  bool _lastEfficiency = false;
 
   @override
   void didChangeDependencies() {
@@ -78,21 +104,111 @@ class _AsymmetricMarqueeTextState extends State<AsymmetricMarqueeText> {
 
     if (isEfficiency != _lastEfficiency) {
       _lastEfficiency = isEfficiency;
-      if (isEfficiency) {
-        _timer?.cancel();
-      } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!_isDisposed && mounted) {
-            _scheduleStart();
-          }
-        });
+      final should = _shouldAnimate;
+      if (!should && !_isPaused) {
+        _pauseMarquee();
+      } else if (should && _isPaused) {
+        _resumeMarquee();
       }
+    }
+  }
+
+  void _pauseMarquee() {
+    if (_isPaused) return;
+    _isPaused = true;
+    _sessionEpoch++;
+    _timer?.cancel();
+    _timer = null;
+    if (_scrollController.hasClients) {
+      final currentOffset = _scrollController.offset;
+      _scrollController.jumpTo(currentOffset);
+    }
+  }
+
+  void _resumeMarquee() {
+    if (!_shouldAnimate || !_isPaused || _isDisposed || !mounted) return;
+    _isPaused = false;
+    final epoch = ++_sessionEpoch;
+
+    void executeResume() {
+      if (epoch != _sessionEpoch || _isPaused || _isDisposed || !mounted) {
+        return;
+      }
+      if (!_scrollController.hasClients) {
+        _timer = Timer(const Duration(milliseconds: 150), _resumeMarquee);
+        return;
+      }
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      if (maxScroll <= 0) return;
+
+      final currentOffset = _scrollController.offset;
+
+      if (_isMovingForward) {
+        final remaining = (maxScroll - currentOffset).clamp(0.0, maxScroll);
+        if (remaining <= 2.0) {
+          _isMovingForward = false;
+          _timer = Timer(widget.pauseEnd, () => _animateReturn(epoch));
+        } else {
+          final durationMs = ((remaining / widget.velocity) * 1000)
+              .round()
+              .clamp(200, 6000);
+          _scrollController
+              .animateTo(
+                maxScroll,
+                duration: Duration(milliseconds: durationMs),
+                curve: widget.forwardCurve,
+              )
+              .then((_) {
+                if (epoch != _sessionEpoch ||
+                    _isPaused ||
+                    _isDisposed ||
+                    !mounted) {
+                  return;
+                }
+                _isMovingForward = false;
+                _timer = Timer(widget.pauseEnd, () => _animateReturn(epoch));
+              });
+        }
+      } else {
+        final remaining = currentOffset.clamp(0.0, maxScroll);
+        if (remaining <= 2.0) {
+          _isMovingForward = true;
+          _timer = Timer(widget.pauseStart, () => _animateForward(epoch));
+        } else {
+          final durationMs = ((remaining / (widget.velocity * 1.25)) * 1000)
+              .round()
+              .clamp(200, 5000);
+          _scrollController
+              .animateTo(
+                0,
+                duration: Duration(milliseconds: durationMs),
+                curve: widget.returnCurve,
+              )
+              .then((_) {
+                if (epoch != _sessionEpoch ||
+                    _isPaused ||
+                    _isDisposed ||
+                    !mounted) {
+                  return;
+                }
+                _isMovingForward = true;
+                _timer = Timer(widget.pauseStart, () => _animateForward(epoch));
+              });
+        }
+      }
+    }
+
+    if (_scrollController.hasClients) {
+      executeResume();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => executeResume());
     }
   }
 
   void _scheduleStart() {
     _timer?.cancel();
-    if (_isDisposed || !mounted || _lastEfficiency) return;
+    if (!_shouldAnimate || _isPaused || _isDisposed || !mounted) return;
+    final epoch = ++_sessionEpoch;
     if (!_scrollController.hasClients) {
       _timer = Timer(const Duration(milliseconds: 150), _scheduleStart);
       return;
@@ -101,55 +217,80 @@ class _AsymmetricMarqueeTextState extends State<AsymmetricMarqueeText> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     if (maxScroll <= 0) return;
 
-    _timer = Timer(widget.pauseStart, _animateForward);
+    _isMovingForward = true;
+    _timer = Timer(widget.pauseStart, () => _animateForward(epoch));
   }
 
-  void _animateForward() {
+  void _animateForward(int epoch) {
     _timer?.cancel();
-    if (_isDisposed || !mounted || !_scrollController.hasClients) return;
+    if (epoch != _sessionEpoch ||
+        _isPaused ||
+        _isDisposed ||
+        !mounted ||
+        !_scrollController.hasClients) {
+      return;
+    }
     final maxScroll = _scrollController.position.maxScrollExtent;
     if (maxScroll <= 0) return;
+    _isMovingForward = true;
 
     final duration = Duration(
-      milliseconds: ((maxScroll / widget.velocity) * 1000)
-          .round()
-          .clamp(600, 6000)
-          .toInt(),
+      milliseconds: ((maxScroll / widget.velocity) * 1000).round().clamp(
+        600,
+        6000,
+      ),
     );
 
     _scrollController
         .animateTo(maxScroll, duration: duration, curve: widget.forwardCurve)
         .then((_) {
-          if (_isDisposed || !mounted) return;
-          _timer = Timer(widget.pauseEnd, _animateReturn);
+          if (epoch != _sessionEpoch || _isPaused || _isDisposed || !mounted) {
+            return;
+          }
+          _isMovingForward = false;
+          _timer = Timer(widget.pauseEnd, () => _animateReturn(epoch));
         });
   }
 
-  void _animateReturn() {
+  void _animateReturn(int epoch) {
     _timer?.cancel();
-    if (_isDisposed || !mounted || !_scrollController.hasClients) return;
+    if (epoch != _sessionEpoch ||
+        _isPaused ||
+        _isDisposed ||
+        !mounted ||
+        !_scrollController.hasClients) {
+      return;
+    }
     final maxScroll = _scrollController.position.maxScrollExtent;
     if (maxScroll <= 0) return;
+    _isMovingForward = false;
 
     final duration = Duration(
       milliseconds: ((maxScroll / (widget.velocity * 1.25)) * 1000)
           .round()
-          .clamp(500, 5000)
-          .toInt(),
+          .clamp(500, 5000),
     );
 
     _scrollController
         .animateTo(0, duration: duration, curve: widget.returnCurve)
         .then((_) {
-          if (_isDisposed || !mounted) return;
-          _timer = Timer(widget.pauseStart, _animateForward);
+          if (epoch != _sessionEpoch || _isPaused || _isDisposed || !mounted) {
+            return;
+          }
+          _isMovingForward = true;
+          _timer = Timer(widget.pauseStart, () => _animateForward(epoch));
         });
   }
 
   @override
   void dispose() {
     _isDisposed = true;
+    _sessionEpoch++;
     _timer?.cancel();
+    _timer = null;
+    AppPowerManager.instance.marqueeAnimationNotifier.removeListener(
+      _onPowerManagerChanged,
+    );
     _scrollController.dispose();
     super.dispose();
   }

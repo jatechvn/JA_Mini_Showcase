@@ -22,32 +22,54 @@ class _MeshOrbState extends State<MeshOrb> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.duration,
-  )..repeat(reverse: true);
+  );
 
-  late final AppLifecycleListener _lifecycleListener;
   bool _lastEfficiency = false;
+
+  bool get _shouldAnimate {
+    if (_lastEfficiency) return false;
+    return AppPowerManager.instance.shouldAnimateBackground;
+  }
 
   @override
   void initState() {
     super.initState();
-    // Stops the drift while the window is minimized/hidden, mirroring the
-    // Page Visibility low-power sleep mode added to UI_DESIGN_Sample.html
-    // (`visibilitychange` -> orb.animationPlayState = 'paused', 0% background CPU).
-    _lifecycleListener = AppLifecycleListener(
-      onStateChange: (state) {
-        if (_lastEfficiency) return;
-        switch (state) {
-          case AppLifecycleState.hidden:
-          case AppLifecycleState.paused:
-            _controller.stop();
-          case AppLifecycleState.resumed:
-            _controller.repeat(reverse: true);
-          case AppLifecycleState.inactive:
-          case AppLifecycleState.detached:
-            break;
-        }
-      },
+    _controller.addStatusListener(_onAnimationStatusChanged);
+    AppPowerManager.instance.backgroundAnimationNotifier.addListener(
+      _onPowerManagerChanged,
     );
+    if (_shouldAnimate) {
+      _controller.forward();
+    }
+  }
+
+  void _onAnimationStatusChanged(AnimationStatus status) {
+    if (!_shouldAnimate) return;
+    if (status == AnimationStatus.completed) {
+      _controller.reverse();
+    } else if (status == AnimationStatus.dismissed) {
+      _controller.forward();
+    }
+  }
+
+  void _resumeAnimation() {
+    if (!_shouldAnimate) return;
+    // stop() retains status; resume the same leg instead of restarting forward.
+    if (_controller.status == AnimationStatus.reverse ||
+        _controller.status == AnimationStatus.completed) {
+      _controller.reverse();
+    } else {
+      _controller.forward();
+    }
+  }
+
+  void _onPowerManagerChanged() {
+    if (!mounted) return;
+    if (_shouldAnimate) {
+      if (!_controller.isAnimating) _resumeAnimation();
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+    }
   }
 
   @override
@@ -64,17 +86,20 @@ class _MeshOrbState extends State<MeshOrb> with SingleTickerProviderStateMixin {
 
     if (isEfficiency != _lastEfficiency) {
       _lastEfficiency = isEfficiency;
-      if (isEfficiency) {
-        if (_controller.isAnimating) _controller.stop();
+      if (_shouldAnimate) {
+        if (!_controller.isAnimating) _resumeAnimation();
       } else {
-        if (!_controller.isAnimating) _controller.repeat(reverse: true);
+        if (_controller.isAnimating) _controller.stop();
       }
     }
   }
 
   @override
   void dispose() {
-    _lifecycleListener.dispose();
+    _controller.removeStatusListener(_onAnimationStatusChanged);
+    AppPowerManager.instance.backgroundAnimationNotifier.removeListener(
+      _onPowerManagerChanged,
+    );
     _controller.dispose();
     super.dispose();
   }

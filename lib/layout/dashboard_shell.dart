@@ -7,6 +7,7 @@ import '../theme/language_provider.dart';
 import '../theme/app_colors.dart';
 import '../modules/constants.dart' as app_constants;
 import '../modules/ota_update_service.dart';
+import '../modules/services/app_power_manager.dart';
 import '../widgets/glass_widgets.dart';
 import '../widgets/glass_dialog.dart';
 import '../widgets/glass_update_dialog.dart';
@@ -480,6 +481,8 @@ class _DashboardShellState extends State<DashboardShell> {
     final origDialogOpacity = theme.dialogOpacity;
     final origDropdownBlur = theme.dropdownBlur;
     final origDropdownOpacity = theme.dropdownOpacity;
+    final origEnableIdleSleep = AppPowerManager.instance.enableIdleSleep;
+    final origIdleTimeoutSeconds = AppPowerManager.instance.idleTimeoutSeconds;
 
     double localCardBlur = origCardBlur;
     double localCardOpacity = origCardOpacity;
@@ -487,6 +490,8 @@ class _DashboardShellState extends State<DashboardShell> {
     double localDialogOpacity = origDialogOpacity;
     double localDropdownBlur = origDropdownBlur;
     double localDropdownOpacity = origDropdownOpacity;
+    bool localEnableIdleSleep = origEnableIdleSleep;
+    int localIdleTimeoutSeconds = origIdleTimeoutSeconds;
 
     int activeTab = 0;
 
@@ -546,6 +551,8 @@ class _DashboardShellState extends State<DashboardShell> {
                             localDialogOpacity: localDialogOpacity,
                             localDropdownBlur: localDropdownBlur,
                             localDropdownOpacity: localDropdownOpacity,
+                            localEnableIdleSleep: localEnableIdleSleep,
+                            localIdleTimeoutSeconds: localIdleTimeoutSeconds,
                             onCardBlurChanged: (v) {
                               setDialogState(() => localCardBlur = v);
                               theme.setLiveGlassmorphism(cardBlur: v);
@@ -570,6 +577,14 @@ class _DashboardShellState extends State<DashboardShell> {
                               setDialogState(() => localDropdownOpacity = v);
                               theme.setLiveGlassmorphism(dropdownOpacity: v);
                             },
+                            onEnableIdleSleepChanged: (v) {
+                              setDialogState(() => localEnableIdleSleep = v);
+                              AppPowerManager.instance.setEnableIdleSleep(v);
+                            },
+                            onIdleTimeoutSecondsChanged: (v) {
+                              setDialogState(() => localIdleTimeoutSeconds = v);
+                              AppPowerManager.instance.setIdleTimeoutSeconds(v);
+                            },
                             onResetDefaults: () {
                               setDialogState(() {
                                 localCardBlur = 20.0;
@@ -578,6 +593,8 @@ class _DashboardShellState extends State<DashboardShell> {
                                 localDialogOpacity = 0.85;
                                 localDropdownBlur = 20.0;
                                 localDropdownOpacity = 0.86;
+                                localEnableIdleSleep = true;
+                                localIdleTimeoutSeconds = 12;
                               });
                               theme.setLiveGlassmorphism(
                                 cardBlur: 20.0,
@@ -586,6 +603,10 @@ class _DashboardShellState extends State<DashboardShell> {
                                 dialogOpacity: 0.85,
                                 dropdownBlur: 20.0,
                                 dropdownOpacity: 0.86,
+                              );
+                              AppPowerManager.instance.setEnableIdleSleep(true);
+                              AppPowerManager.instance.setIdleTimeoutSeconds(
+                                12,
                               );
                             },
                           )
@@ -624,7 +645,15 @@ class _DashboardShellState extends State<DashboardShell> {
         );
       },
     ).then((saved) {
-      if (!mounted || saved == true) return;
+      if (!mounted) return;
+      if (saved == true) {
+        AppPowerManager.instance.setEnableIdleSleep(localEnableIdleSleep);
+        AppPowerManager.instance.setIdleTimeoutSeconds(localIdleTimeoutSeconds);
+        return;
+      }
+      // Rollback on Cancel
+      AppPowerManager.instance.setEnableIdleSleep(origEnableIdleSleep);
+      AppPowerManager.instance.setIdleTimeoutSeconds(origIdleTimeoutSeconds);
       theme.setLiveGlassmorphism(
         cardBlur: origCardBlur,
         cardOpacity: origCardOpacity,

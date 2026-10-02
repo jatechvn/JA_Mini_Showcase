@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:window_manager/window_manager.dart';
+import 'services/app_power_manager.dart';
 
 /// Central reactive service managing desktop window focus and power efficiency state.
 ///
@@ -9,6 +10,8 @@ import 'package:window_manager/window_manager.dart';
 /// - When the window is unfocused (inactive/blurred) or minimized, it transitions to
 ///   [isEfficiencyMode] = true (Low-Power Sleep Mode).
 /// - When the window regains focus, it restores full rendering fidelity ([isEfficiencyMode] = false).
+///
+/// Dispatches lifecycle and window events to [AppPowerManager] for granular 4-tier power control.
 class WindowFocusService extends ChangeNotifier
     with WindowListener, WidgetsBindingObserver {
   bool _isFocused = true;
@@ -60,6 +63,7 @@ class WindowFocusService extends ChangeNotifier
       case AppLifecycleState.detached:
         break;
     }
+    AppPowerManager.instance.onLifecycleStateChanged(state);
   }
 
   @override
@@ -69,6 +73,7 @@ class WindowFocusService extends ChangeNotifier
       _isFocused = true;
       notifyListeners();
     }
+    AppPowerManager.instance.onWindowFocus();
   }
 
   @override
@@ -78,6 +83,7 @@ class WindowFocusService extends ChangeNotifier
       _isFocused = false;
       notifyListeners();
     }
+    AppPowerManager.instance.onWindowBlur();
   }
 
   @override
@@ -95,6 +101,7 @@ class WindowFocusService extends ChangeNotifier
     if (changed) {
       notifyListeners();
     }
+    AppPowerManager.instance.onWindowMinimize();
   }
 
   @override
@@ -112,6 +119,7 @@ class WindowFocusService extends ChangeNotifier
     if (changed) {
       notifyListeners();
     }
+    AppPowerManager.instance.onWindowRestore();
   }
 
   /// Testing helper to simulate window focus changes without native OS events.
@@ -121,6 +129,7 @@ class WindowFocusService extends ChangeNotifier
       _isFocused = value;
       notifyListeners();
     }
+    AppPowerManager.instance.setFocusedForTesting(value);
   }
 
   /// Testing helper to simulate window minimize changes without native OS events.
@@ -133,10 +142,12 @@ class WindowFocusService extends ChangeNotifier
       }
       notifyListeners();
     }
+    AppPowerManager.instance.setVisibleForTesting(!value);
   }
 
   @override
   void dispose() {
+    AppPowerManager.instance.resetForTesting();
     if (_isInitialized) {
       WidgetsBinding.instance.removeObserver(this);
       if (!kIsWeb &&

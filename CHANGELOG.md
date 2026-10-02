@@ -4,6 +4,40 @@ All notable changes to **JA Mini Showcase** will be documented in this file.
 
 ---
 
+## [v1.4.0] - 2026-10-02
+
+### 🚀 Nâng cấp & Tính năng mới
+- **⚡ Centralized AppPowerManager & 4-Tier Energy Policy Matrix:**
+  - Thiết kế kiến trúc quản lý năng lượng tập trung Single Source of Truth `AppPowerManager` phân tách 4 cấp độ trạng thái rõ ràng: **Active** (đầy đủ hiệu ứng), **Idle Sleep** (ngủ rảnh tay), **Efficiency/Blur** (cửa sổ mất focus), và **Deep Sleep/Minimized** (thu nhỏ xuống Taskbar).
+  - Tách biệt 3 luồng thông báo độc lập qua `ValueNotifier<bool>`: `backgroundAnimationNotifier`, `indicatorsAnimationNotifier`, và `marqueeAnimationNotifier`.
+- **🌙 Chế Độ Ngủ Rảnh Tay (Hands-free Idle Sleep Mode):**
+  - Tự động phát hiện khi người dùng không tương tác qua `Listener` và `Focus` toàn cục tại `lib/main.dart` với cơ chế throttle 600ms chống nghẽn CPU.
+  - Sau thời gian rảnh tay (mặc định 12s, tùy chọn 30s hoặc 60s), ứng dụng tự động đưa hiệu ứng nền `MeshOrb` về trạng thái nghỉ để giải phóng GPU/CPU, trong khi các chỉ báo trạng thái và marquee vẫn hoạt động trực quan.
+  - Tích hợp thẻ cấu hình riêng biệt trong hộp thoại Settings (`DashboardShellSettingsView`) với Switch bật/tắt, FilterChips chọn thời gian chờ, và cơ chế Rollback on Cancel hoàn nguyên trạng thái khi hủy bỏ.
+- **🎯 Bảo Toàn Hướng Chuyển Động (Direction Preservation):**
+  - Cải tiến `MeshOrb` và `WaveIndicator` với cờ `_isMovingForward`. Khi thức giấc từ trạng thái nghỉ, hoạt ảnh tiếp tục chuyển động mượt mà từ đúng vị trí và hướng đang chạy, loại bỏ hoàn toàn hiện tượng giật giật (visual jitter).
+- **🛡️ Session Epoch Guard & Đóng Băng Cuộn (Marquee Offset Freeze):**
+  - Khắc phục triệt để hiện tượng rò rỉ Timer callback và ghost animation trên `AsymmetricMarqueeText` bằng cơ chế kiểm soát số hiệu phiên `_sessionEpoch`.
+  - Tự động đóng băng vị trí cuộn `jumpTo(currentOffset)` khi cửa sổ mất tiêu điểm và tiếp tục cuộn mượt mà từ vị trí đóng băng khi kích hoạt lại.
+- **🪟 Khắc Phục Native Win32 Focus Stealing:**
+  - Tinh chỉnh `windows/runner/win32_window.cpp` tại xử lý thông điệp `WM_ACTIVATE`, chỉ chuyển tiêu điểm cho Flutter view khi cửa sổ thực sự kích hoạt (`LOWORD(wparam) != WA_INACTIVE`), ngăn chặn lỗi chiếm focus khi ở trạng thái inactive.
+- **🌐 Đồng Bộ Đa Ngôn Ngữ (Trilingual Localization):**
+  - Bổ sung trọn bộ chuỗi bản dịch cho tính năng Idle Sleep Mode sang Tiếng Việt, Tiếng Anh và Tiếng Trung trong `LanguageProvider`.
+
+### 🧪 Testing & Quality Assurance
+- Bổ sung 4 bộ kiểm thử tự động chuyên sâu nâng tổng số tests từ 82 lên **98 tests (100% PASS)**:
+  - `app_power_manager_test.dart` (8 tests): Kiểm tra 4-tier matrix, interaction throttling, idle timer transition, mock clock injection.
+  - `glass_animation_resume_test.dart` (4 tests): Kiểm tra direction preservation và freeze/resume của `MeshOrb` và `WaveIndicator`.
+  - `glass_marquee_session_test.dart` (2 tests): Kiểm tra session epoch guard và chống rò rỉ Timer callback.
+  - `settings_dialog_tabs_test.dart` (2 tests): Kiểm tra UI Settings Idle Sleep Switch, Chips, và cơ chế Rollback on Cancel.
+- `dart analyze`: Đạt tuyệt đối **0 issues found!**.
+- `dart format .`: Đã định dạng chuẩn toàn bộ codebase.
+
+### 📦 Phát hành
+- Đồng bộ version 1.4.0+6 trong `pubspec.yaml`, `lib/modules/constants.dart`, `windows/runner/Runner.rc`, `ABOUT.txt`, `README.md`, `RELEASE_NOTES.md`, `USERGUIDE.md`.
+
+---
+
 ## [v1.3.0] - 2026-09-29
 
 ### 🚀 Nâng cấp & Tính năng mới

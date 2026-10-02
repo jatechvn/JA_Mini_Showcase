@@ -236,8 +236,8 @@ Win32Window::MessageHandler(HWND hwnd,
     }
 
     case WM_ACTIVATE:
-      if (child_content_ != nullptr) {
-        SetFocus(child_content_);
+      if (child_content_ != nullptr && LOWORD(wparam) != WA_INACTIVE) {
+        ::SetFocus(child_content_);
       }
       return 0;
 

@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../theme/styles_win10.dart';
 import '../modules/window_focus_service.dart';
+import '../modules/services/app_power_manager.dart';
 
 export 'glass_dropdown.dart';
 export 'glass_terminal.dart';

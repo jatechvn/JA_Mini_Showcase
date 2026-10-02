@@ -227,12 +227,16 @@ class _SettingsGlassTuningTab extends StatelessWidget {
     required this.localDialogOpacity,
     required this.localDropdownBlur,
     required this.localDropdownOpacity,
+    required this.localEnableIdleSleep,
+    required this.localIdleTimeoutSeconds,
     required this.onCardBlurChanged,
     required this.onCardOpacityChanged,
     required this.onDialogBlurChanged,
     required this.onDialogOpacityChanged,
     required this.onDropdownBlurChanged,
     required this.onDropdownOpacityChanged,
+    required this.onEnableIdleSleepChanged,
+    required this.onIdleTimeoutSecondsChanged,
     required this.onResetDefaults,
   });
 
@@ -245,131 +249,266 @@ class _SettingsGlassTuningTab extends StatelessWidget {
   final double localDialogOpacity;
   final double localDropdownBlur;
   final double localDropdownOpacity;
+  final bool localEnableIdleSleep;
+  final int localIdleTimeoutSeconds;
   final ValueChanged<double> onCardBlurChanged;
   final ValueChanged<double> onCardOpacityChanged;
   final ValueChanged<double> onDialogBlurChanged;
   final ValueChanged<double> onDialogOpacityChanged;
   final ValueChanged<double> onDropdownBlurChanged;
   final ValueChanged<double> onDropdownOpacityChanged;
+  final ValueChanged<bool> onEnableIdleSleepChanged;
+  final ValueChanged<int> onIdleTimeoutSecondsChanged;
   final VoidCallback onResetDefaults;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: BentoCard(
-        colors: colors,
-        blurSigma: localCardBlur,
-        bgOpacity: localCardOpacity,
-        padding: const EdgeInsets.all(16),
-        borderRadius: 14,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BentoCard(
+            colors: colors,
+            blurSigma: localCardBlur,
+            bgOpacity: localCardOpacity,
+            padding: const EdgeInsets.all(16),
+            borderRadius: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.blur_on_rounded,
-                        size: 18,
-                        color: colors.accentPurple,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.blur_on_rounded,
+                            size: 18,
+                            color: colors.accentPurple,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              language.t('settings_card_header'),
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(
+                    ),
+                    InkWell(
+                      onTap: onResetDefaults,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         child: Text(
-                          language.t('settings_card_header'),
+                          language.t('settings_default'),
                           style: TextStyle(
-                            color: colors.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
+                            color: colors.accentCyan,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                InkWell(
-                  onTap: onResetDefaults,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    child: Text(
-                      language.t('settings_default'),
-                      style: TextStyle(
-                        color: colors.accentCyan,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 10),
+                _SettingsGlassSlider(
+                  label: language.t('settings_card_blur'),
+                  value: localCardBlur,
+                  min: 0,
+                  max: 40,
+                  colors: colors,
+                  onChanged: onCardBlurChanged,
+                ),
+                _SettingsGlassSlider(
+                  label: language.t('settings_card_opacity'),
+                  value: localCardOpacity,
+                  min: 0.05,
+                  max: 1.0,
+                  isPercent: true,
+                  colors: colors,
+                  onChanged: onCardOpacityChanged,
+                ),
+                const SizedBox(height: 6),
+                Divider(color: colors.subCardBorder, height: 1),
+                const SizedBox(height: 6),
+                _SettingsGlassSlider(
+                  label: language.t('settings_dialog_blur'),
+                  value: localDialogBlur,
+                  min: 0,
+                  max: 40,
+                  colors: colors,
+                  onChanged: onDialogBlurChanged,
+                ),
+                _SettingsGlassSlider(
+                  label: language.t('settings_dialog_opacity'),
+                  value: localDialogOpacity,
+                  min: 0.1,
+                  max: 1.0,
+                  isPercent: true,
+                  colors: colors,
+                  onChanged: onDialogOpacityChanged,
+                ),
+                const SizedBox(height: 6),
+                Divider(color: colors.subCardBorder, height: 1),
+                const SizedBox(height: 6),
+                _SettingsGlassSlider(
+                  label: language.t('settings_dropdown_blur'),
+                  value: localDropdownBlur,
+                  min: 0,
+                  max: 40,
+                  colors: colors,
+                  onChanged: onDropdownBlurChanged,
+                ),
+                _SettingsGlassSlider(
+                  label: language.t('settings_dropdown_opacity'),
+                  value: localDropdownOpacity,
+                  min: 0.1,
+                  max: 1.0,
+                  isPercent: true,
+                  colors: colors,
+                  onChanged: onDropdownOpacityChanged,
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            _SettingsGlassSlider(
-              label: language.t('settings_card_blur'),
-              value: localCardBlur,
-              min: 0,
-              max: 40,
-              colors: colors,
-              onChanged: onCardBlurChanged,
+          ),
+          const SizedBox(height: 14),
+          BentoCard(
+            colors: colors,
+            blurSigma: localCardBlur,
+            bgOpacity: localCardOpacity,
+            padding: const EdgeInsets.all(16),
+            borderRadius: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.energy_savings_leaf_rounded,
+                      size: 18,
+                      color: colors.accentEmerald,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        language.t('idle_sleep_title'),
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: localEnableIdleSleep,
+                      activeThumbColor: colors.accentEmerald,
+                      activeTrackColor: colors.accentEmerald.withValues(
+                        alpha: 0.35,
+                      ),
+                      onChanged: onEnableIdleSleepChanged,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  language.t('idle_sleep_desc'),
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 11.5,
+                    height: 1.4,
+                  ),
+                ),
+                if (localEnableIdleSleep) ...[
+                  const SizedBox(height: 12),
+                  Divider(color: colors.subCardBorder, height: 1),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text(
+                        language.t('idle_timeout_label'),
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      _buildTimeoutChip(
+                        seconds: 12,
+                        label: language.t('idle_12s'),
+                        isSelected: localIdleTimeoutSeconds == 12,
+                        colors: colors,
+                        onTap: () => onIdleTimeoutSecondsChanged(12),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTimeoutChip(
+                        seconds: 30,
+                        label: language.t('idle_30s'),
+                        isSelected: localIdleTimeoutSeconds == 30,
+                        colors: colors,
+                        onTap: () => onIdleTimeoutSecondsChanged(30),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTimeoutChip(
+                        seconds: 60,
+                        label: language.t('idle_60s'),
+                        isSelected: localIdleTimeoutSeconds == 60,
+                        colors: colors,
+                        onTap: () => onIdleTimeoutSecondsChanged(60),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
-            _SettingsGlassSlider(
-              label: language.t('settings_card_opacity'),
-              value: localCardOpacity,
-              min: 0.05,
-              max: 1.0,
-              isPercent: true,
-              colors: colors,
-              onChanged: onCardOpacityChanged,
-            ),
-            const SizedBox(height: 6),
-            Divider(color: colors.subCardBorder, height: 1),
-            const SizedBox(height: 6),
-            _SettingsGlassSlider(
-              label: language.t('settings_dialog_blur'),
-              value: localDialogBlur,
-              min: 0,
-              max: 40,
-              colors: colors,
-              onChanged: onDialogBlurChanged,
-            ),
-            _SettingsGlassSlider(
-              label: language.t('settings_dialog_opacity'),
-              value: localDialogOpacity,
-              min: 0.1,
-              max: 1.0,
-              isPercent: true,
-              colors: colors,
-              onChanged: onDialogOpacityChanged,
-            ),
-            const SizedBox(height: 6),
-            Divider(color: colors.subCardBorder, height: 1),
-            const SizedBox(height: 6),
-            _SettingsGlassSlider(
-              label: language.t('settings_dropdown_blur'),
-              value: localDropdownBlur,
-              min: 0,
-              max: 40,
-              colors: colors,
-              onChanged: onDropdownBlurChanged,
-            ),
-            _SettingsGlassSlider(
-              label: language.t('settings_dropdown_opacity'),
-              value: localDropdownOpacity,
-              min: 0.1,
-              max: 1.0,
-              isPercent: true,
-              colors: colors,
-              onChanged: onDropdownOpacityChanged,
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeoutChip({
+    required int seconds,
+    required String label,
+    required bool isSelected,
+    required AppColors colors,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.accentEmerald.withValues(alpha: 0.2)
+              : colors.subCardBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? colors.accentEmerald : colors.subCardBorder,
+            width: isSelected ? 1.4 : 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? colors.accentEmerald : colors.textSecondary,
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
         ),
       ),
     );

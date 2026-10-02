@@ -1,13 +1,13 @@
-# Hướng Dẫn Sử Dụng JA Mini Showcase v1.3.0
+# Hướng Dẫn Sử Dụng JA Mini Showcase v1.4.0
 
-Tài liệu hướng dẫn cài đặt, cấu hình và sử dụng trọn bộ tính năng của **JA Mini Showcase v1.3.0** — Nền tảng trình diễn giao diện Bento Glassmorphism, Chế độ Tiết kiệm Điện Năng Nâng Cao (0 FPS), Terminal tương tác và Cập nhật tự động OTA trên Windows Desktop.
+Tài liệu hướng dẫn cài đặt, cấu hình và sử dụng trọn bộ tính năng của **JA Mini Showcase v1.4.0** — Nền tảng trình diễn giao diện Bento Glassmorphism, Quản lý năng lượng tập trung AppPowerManager, Chế độ Ngủ Rảnh Tay (Hands-free Idle Sleep Mode), Chế độ Tiết kiệm Điện Năng Nâng Cao (0 FPS), Terminal tương tác và Cập nhật tự động OTA trên Windows Desktop.
 
 ---
 
 ## 📦 1. Cài Đặt & Khởi Chạy
 
 ### Cách 1: Sử dụng Bản Cài Đặt 1-Click (Khuyên Dùng)
-1. Tải về gói nén: `JA_Mini_Showcase_v1.3.0_Windows_x64.zip`.
+1. Tải về gói nén: `JA_Mini_Showcase_v1.4.0_Windows_x64.zip`.
 2. Giải nén toàn bộ thư mục.
 3. Nhấp đúp chuột vào file `install.bat`.
    - Ứng dụng sẽ được cài đặt tự động vào `%LOCALAPPDATA%\Programs\JA_Mini_Showcase` (**hoàn toàn không cần quyền Quản trị viên / Admin**).
@@ -19,7 +19,7 @@ Tài liệu hướng dẫn cài đặt, cấu hình và sử dụng trọn bộ 
    ```
 
 ### Cách 2: Chạy Trực Tiếp (Portable Mode)
-- Giải nén `JA_Mini_Showcase_v1.3.0_Windows_x64.zip` vào bất kỳ thư mục nào bạn muốn.
+- Giải nén `JA_Mini_Showcase_v1.4.0_Windows_x64.zip` vào bất kỳ thư mục nào bạn muốn.
 - Chạy trực tiếp tệp tin `ja_mini_showcase.exe`. Ứng dụng mang tính di động cao, không tạo file rác ngoài thư mục.
 
 ### Gỡ Cài Đặt (Uninstall)
@@ -27,14 +27,21 @@ Tài liệu hướng dẫn cài đặt, cấu hình và sử dụng trọn bộ 
 
 ---
 
-## 🌿 2. Chế Độ Tiết Kiệm Điện Năng (Low-Power Sleep Mode - 0 FPS)
+## 🌿 2. Quản Lý Năng Lượng & Chế Độ Ngủ Rảnh Tay (Idle Sleep Mode)
 
-Ứng dụng tích hợp công nghệ tối ưu hóa năng lượng tự động:
-- **Tự động kích hoạt**: Khi cửa sổ ứng dụng mất tiêu điểm (bấm sang Chrome/Notepad/Word...) hoặc khi thu nhỏ xuống Taskbar:
-  - Tắt hoàn toàn hiệu ứng kính mờ (BackdropFilter = 0).
-  - Đóng băng 100% hoạt ảnh UI (Wave, Orbs, Laser beam, Marquee).
-  - Tốc độ khung hình hạ xuống đúng **0 FPS** và mức tiêu thụ GPU rơi về **0.0%**.
-- **Đèn báo trạng thái trực quan**: Viên nang trạng thái trên Header chuyển sang biểu tượng lá xanh `Icons.eco_rounded` cùng dòng chữ `🌿 TIẾT KIỆM (0 FPS)`.
+Ứng dụng tích hợp kiến trúc quản lý năng lượng tập trung `AppPowerManager` 4 cấp độ:
+- **Active (Hoạt động)**: Đầy đủ hoạt ảnh và hiệu ứng kính mờ thời gian thực khi người dùng đang tương tác.
+- **Idle Sleep (Ngủ Rảnh Tay)**:
+  - Khi không có thao tác chuột hoặc bàn phím sau một khoảng thời gian (mặc định 12 giây, tùy chọn 30s hoặc 60s), ứng dụng tự động dừng chuyển động nền `MeshOrb` để giảm tải GPU/CPU.
+  - Các chỉ báo hoạt động (`WaveIndicator`, `BorderBeam`, `MarqueeText`) vẫn duy trì hiển thị để không làm gián đoạn mắt người xem.
+  - Tùy chỉnh bật/tắt và chọn thời gian chờ ngay trong **Cài đặt (Ctrl+,) > Chế độ Ngủ Rảnh Tay (Idle Sleep Mode)**.
+  - Hỗ trợ **Rollback on Cancel**: Nếu bạn đóng hộp thoại bằng phím `Esc` hoặc bấm Hủy, cấu hình sẽ hoàn nguyên về giá trị trước đó.
+- **Efficiency Mode (Mất tiêu điểm / Blur)**:
+  - Khi bạn bấm chuyển sang cửa sổ khác, toàn bộ hiệu ứng kính mờ (BackdropFilter = 0) và hoạt ảnh sẽ lập tức đóng băng, hạ mức tiêu thụ về đúng **0 FPS**.
+  - Hoạt ảnh lưu trữ hướng di chuyển và tiếp tục mượt mà khi cửa sổ được kích hoạt lại (Direction Preservation).
+  - Vị trí dòng chữ cuộn `AsymmetricMarqueeText` được đóng băng tức thì và bảo vệ chống trùng lặp timer callback (Session Epoch Guard).
+- **Deep Sleep (Thu nhỏ xuống Taskbar / Minimized)**:
+  - Tối ưu hóa sâu nhất, tạm dừng toàn bộ pipeline render khi cửa sổ bị ẩn.
 - **Thử nghiệm thủ công**: Bấm `Ctrl + K` > chọn **"Thử nghiệm Chế độ Tiết kiệm Điện (0 FPS)"** để quan sát sự chuyển đổi trực tiếp trên màn hình.
 
 ---

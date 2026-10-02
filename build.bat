@@ -26,7 +26,7 @@ if not "%BUILD_EXIT_CODE%"=="0" (
 
 set "REL=build\windows\x64\runner\Release"
 set "DIST=dist"
-set "VERSION=1.3.0"
+set "VERSION=1.4.0"
 set "PACK=dist_pack"
 set "BACKUP_ROOT=backup"
 

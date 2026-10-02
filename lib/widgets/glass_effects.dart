@@ -31,29 +31,33 @@ class _BorderBeamState extends State<BorderBeam>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.duration,
-  )..repeat();
+  );
 
-  late final AppLifecycleListener _lifecycleListener;
   bool _lastEfficiency = false;
+
+  bool get _shouldAnimate {
+    if (_lastEfficiency) return false;
+    return AppPowerManager.instance.shouldAnimateIndicators;
+  }
 
   @override
   void initState() {
     super.initState();
-    _lifecycleListener = AppLifecycleListener(
-      onStateChange: (state) {
-        if (_lastEfficiency) return;
-        switch (state) {
-          case AppLifecycleState.hidden:
-          case AppLifecycleState.paused:
-            _controller.stop();
-          case AppLifecycleState.resumed:
-            _controller.repeat();
-          case AppLifecycleState.inactive:
-          case AppLifecycleState.detached:
-            break;
-        }
-      },
+    AppPowerManager.instance.indicatorsAnimationNotifier.addListener(
+      _onPowerManagerChanged,
     );
+    if (_shouldAnimate) {
+      _controller.repeat();
+    }
+  }
+
+  void _onPowerManagerChanged() {
+    if (!mounted) return;
+    if (_shouldAnimate) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+    }
   }
 
   @override
@@ -70,17 +74,19 @@ class _BorderBeamState extends State<BorderBeam>
 
     if (isEfficiency != _lastEfficiency) {
       _lastEfficiency = isEfficiency;
-      if (isEfficiency) {
-        if (_controller.isAnimating) _controller.stop();
-      } else {
+      if (_shouldAnimate) {
         if (!_controller.isAnimating) _controller.repeat();
+      } else {
+        if (_controller.isAnimating) _controller.stop();
       }
     }
   }
 
   @override
   void dispose() {
-    _lifecycleListener.dispose();
+    AppPowerManager.instance.indicatorsAnimationNotifier.removeListener(
+      _onPowerManagerChanged,
+    );
     _controller.dispose();
     super.dispose();
   }
@@ -201,35 +207,33 @@ class RotatingGlowBorder extends StatefulWidget {
 class _RotatingGlowBorderState extends State<RotatingGlowBorder>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  AppLifecycleListener? _lifecycleListener;
+  bool _lastEfficiency = false;
+
+  bool get _shouldAnimate {
+    if (_lastEfficiency || !widget.isActive) return false;
+    return AppPowerManager.instance.shouldAnimateIndicators;
+  }
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
-
-    if (widget.isActive) {
+    AppPowerManager.instance.indicatorsAnimationNotifier.addListener(
+      _onPowerManagerChanged,
+    );
+    if (_shouldAnimate) {
       _controller.repeat();
     }
-
-    _lifecycleListener = AppLifecycleListener(
-      onStateChange: (state) {
-        if (!mounted || !widget.isActive || _lastEfficiency) return;
-        switch (state) {
-          case AppLifecycleState.hidden:
-          case AppLifecycleState.paused:
-            _controller.stop();
-          case AppLifecycleState.resumed:
-            _controller.repeat();
-          case AppLifecycleState.inactive:
-          case AppLifecycleState.detached:
-            break;
-        }
-      },
-    );
   }
 
-  bool _lastEfficiency = false;
+  void _onPowerManagerChanged() {
+    if (!mounted) return;
+    if (_shouldAnimate) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -245,10 +249,10 @@ class _RotatingGlowBorderState extends State<RotatingGlowBorder>
 
     if (isEfficiency != _lastEfficiency) {
       _lastEfficiency = isEfficiency;
-      if (isEfficiency) {
-        if (_controller.isAnimating) _controller.stop();
+      if (_shouldAnimate) {
+        if (!_controller.isAnimating) _controller.repeat();
       } else {
-        if (widget.isActive && !_controller.isAnimating) _controller.repeat();
+        if (_controller.isAnimating) _controller.stop();
       }
     }
   }
@@ -261,12 +265,8 @@ class _RotatingGlowBorderState extends State<RotatingGlowBorder>
       if (_controller.isAnimating) _controller.repeat();
     }
     if (widget.isActive != oldWidget.isActive) {
-      if (widget.isActive) {
-        final state = WidgetsBinding.instance.lifecycleState;
-        if (state != AppLifecycleState.hidden &&
-            state != AppLifecycleState.paused) {
-          _controller.repeat();
-        }
+      if (_shouldAnimate) {
+        _controller.repeat();
       } else {
         _controller.stop();
         _controller.reset();
@@ -276,7 +276,9 @@ class _RotatingGlowBorderState extends State<RotatingGlowBorder>
 
   @override
   void dispose() {
-    _lifecycleListener?.dispose();
+    AppPowerManager.instance.indicatorsAnimationNotifier.removeListener(
+      _onPowerManagerChanged,
+    );
     _controller.dispose();
     super.dispose();
   }

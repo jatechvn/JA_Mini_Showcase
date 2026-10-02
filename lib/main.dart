@@ -12,6 +12,7 @@ import 'modules/build_info.dart';
 import 'modules/logger_config.dart';
 import 'modules/window_helper.dart';
 import 'modules/window_focus_service.dart';
+import 'modules/services/app_power_manager.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,6 +82,27 @@ class _AppContent extends StatelessWidget {
         brightness: theme.isDark ? Brightness.dark : Brightness.light,
         scaffoldBackgroundColor: Colors.transparent,
       ),
+      builder: (context, child) {
+        return Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) =>
+              AppPowerManager.instance.recordUserInteraction(),
+          onPointerMove: (_) =>
+              AppPowerManager.instance.recordUserInteraction(),
+          onPointerHover: (_) =>
+              AppPowerManager.instance.recordUserInteraction(),
+          onPointerSignal: (_) =>
+              AppPowerManager.instance.recordUserInteraction(),
+          child: Focus(
+            autofocus: false,
+            onKeyEvent: (_, _) {
+              AppPowerManager.instance.recordUserInteraction();
+              return KeyEventResult.ignored;
+            },
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
       home: Builder(
         builder: (ctx) {
           return CommandPaletteShortcut(

@@ -127,6 +127,34 @@ class LanguageProvider extends ChangeNotifier {
       'en': 'Glass Tuning Settings',
       'cn': '毛玻璃微调设置',
     },
+    'idle_sleep_title': {
+      'vi': 'Chế độ Ngủ rảnh tay (Idle Sleep)',
+      'en': 'Idle Sleep Mode',
+      'cn': '空闲休眠模式',
+    },
+    'idle_sleep_desc': {
+      'vi':
+          'Tạm dừng gradient nền nặng khi không thao tác chuột/phím để giải phóng GPU & tiết kiệm điện.',
+      'en': 'Pause heavy background mesh when idle to save GPU & power.',
+      'cn': '空闲时暂停背景渐变以节省 GPU 和能耗。',
+    },
+    'idle_sleep_enable': {
+      'vi': 'Kích hoạt Ngủ rảnh tay',
+      'en': 'Enable Idle Sleep',
+      'cn': '启用空闲休眠',
+    },
+    'idle_timeout_label': {
+      'vi': 'Thời gian chờ rảnh tay',
+      'en': 'Idle Timeout',
+      'cn': '空闲超时',
+    },
+    'idle_12s': {
+      'vi': '12 giây (Khuyên dùng)',
+      'en': '12s (Recommended)',
+      'cn': '12秒 (推荐)',
+    },
+    'idle_30s': {'vi': '30 giây', 'en': '30s', 'cn': '30秒'},
+    'idle_60s': {'vi': '60 giây', 'en': '60s', 'cn': '60秒'},
     'status_live': {
       'vi': 'LIVE • 8090',
       'en': 'LIVE • 8090',
