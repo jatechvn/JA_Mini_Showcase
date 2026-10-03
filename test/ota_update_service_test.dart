@@ -354,6 +354,42 @@ void main() {
         throwsA(isA<StateError>()),
       );
     });
+
+    test('falls back to SHA256SUMS.txt when version.json is missing', () async {
+      final package = File(
+        '${tempDir.path}${Platform.pathSeparator}JA_Mini_Showcase_v1.4.1_Windows_x64.zip',
+      );
+      await package.writeAsBytes([10, 20, 30, 40]);
+      final checksum = await OtaUpdateService.calculateSha256(package);
+      await File(
+        '${tempDir.path}${Platform.pathSeparator}SHA256SUMS.txt',
+      ).writeAsString('$checksum *JA_Mini_Showcase_v1.4.1_Windows_x64.zip\n');
+      await File(
+        '${tempDir.path}${Platform.pathSeparator}RELEASE_NOTES.md',
+      ).writeAsString('Release notes content');
+
+      final result = await service.checkForUpdates(
+        overrideCurrentVersion: '1.4.0',
+      );
+
+      expect(result.hasUpdate, isTrue);
+      expect(result.packageInfo?.version.displayVersion, 'v1.4.1');
+      expect(result.packageInfo?.sha256, checksum);
+      expect(result.packageInfo?.releaseNotes, 'Release notes content');
+    });
+
+    test(
+      'fails gracefully with isConnectionSuccess=false when both manifests are missing',
+      () async {
+        final result = await service.checkForUpdates(
+          overrideCurrentVersion: '1.4.0',
+        );
+
+        expect(result.hasUpdate, isFalse);
+        expect(result.isConnectionSuccess, isFalse);
+        expect(result.errorMessage, contains('version.json'));
+      },
+    );
   });
 
   group('LanguageProvider OTA translations & formatting', () {

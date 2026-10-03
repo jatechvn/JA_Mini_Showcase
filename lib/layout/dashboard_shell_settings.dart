@@ -959,7 +959,8 @@ class _SettingsOtaUpdateTabState extends State<_SettingsOtaUpdateTab> {
                         ],
                       ),
                     )
-                  else if (_checkResult!.isConnectionSuccess)
+                  else if (_checkResult!.isConnectionSuccess &&
+                      _checkResult!.errorMessage == null)
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(

@@ -535,66 +535,142 @@ class OtaUpdateService {
     final versionJsonFile = File(
       '${dir.path}${Platform.pathSeparator}version.json',
     );
-    if (!await versionJsonFile.exists()) {
-      return UpdateCheckResult(
-        hasUpdate: false,
-        currentVersion: currentVerStr,
-        errorMessage: 'Thiếu version.json có SHA-256 bắt buộc',
-      );
-    }
+    final shaSumsFile = File(
+      '${dir.path}${Platform.pathSeparator}SHA256SUMS.txt',
+    );
 
-    try {
-      final json = jsonDecode(await versionJsonFile.readAsString());
-      if (json is! Map<String, dynamic>) {
-        throw const FormatException('version.json must be an object');
-      }
-      final targetVerStr = json['version'] as String?;
-      final fileName = json['fileName'] as String?;
-      final expectedSha256 = json['sha256'] as String?;
-      final notes = json['releaseNotes'] as String?;
-      final targetSemVer = SemanticVersion.tryParse(targetVerStr);
+    if (await versionJsonFile.exists()) {
+      try {
+        final json = jsonDecode(await versionJsonFile.readAsString());
+        if (json is! Map<String, dynamic>) {
+          throw const FormatException('version.json must be an object');
+        }
+        final targetVerStr = json['version'] as String?;
+        final fileName = json['fileName'] as String?;
+        final expectedSha256 = json['sha256'] as String?;
+        final notes = json['releaseNotes'] as String?;
+        final targetSemVer = SemanticVersion.tryParse(targetVerStr);
 
-      if (targetSemVer == null ||
-          fileName == null ||
-          !isValidPackageName(fileName) ||
-          !isValidSha256(expectedSha256)) {
+        if (targetSemVer == null ||
+            fileName == null ||
+            !isValidPackageName(fileName) ||
+            !isValidSha256(expectedSha256)) {
+          return UpdateCheckResult(
+            hasUpdate: false,
+            currentVersion: currentVerStr,
+            isConnectionSuccess: false,
+            errorMessage: 'version.json không hợp lệ hoặc thiếu SHA-256',
+          );
+        }
+
+        final pkgFile = File('${dir.path}${Platform.pathSeparator}$fileName');
+        if (!await pkgFile.exists() || await pkgFile.length() <= 0) {
+          return UpdateCheckResult(
+            hasUpdate: false,
+            currentVersion: currentVerStr,
+            isConnectionSuccess: false,
+            errorMessage:
+                'Gói cập nhật trong version.json không tồn tại hoặc rỗng',
+          );
+        }
+
+        return UpdateCheckResult(
+          hasUpdate: targetSemVer > currentSemVer,
+          currentVersion: currentVerStr,
+          packageInfo: UpdatePackageInfo(
+            version: targetSemVer,
+            fileName: fileName,
+            fullPath: pkgFile.path,
+            fileSize: await pkgFile.length(),
+            sha256: expectedSha256!.trim().toLowerCase(),
+            releaseNotes: notes,
+          ),
+        );
+      } catch (e) {
         return UpdateCheckResult(
           hasUpdate: false,
           currentVersion: currentVerStr,
-          errorMessage: 'version.json không hợp lệ hoặc thiếu SHA-256',
+          isConnectionSuccess: false,
+          errorMessage: 'Lỗi khi đọc version.json: $e',
         );
       }
+    } else if (await shaSumsFile.exists()) {
+      // Fallback: Tìm gói cập nhật từ SHA256SUMS.txt nếu chưa có version.json
+      try {
+        final lines = await shaSumsFile.readAsLines();
+        String? latestFileName;
+        String? latestSha256;
+        SemanticVersion? highestSemVer;
 
-      final pkgFile = File('${dir.path}${Platform.pathSeparator}$fileName');
-      if (!await pkgFile.exists() || await pkgFile.length() <= 0) {
-        return UpdateCheckResult(
-          hasUpdate: false,
-          currentVersion: currentVerStr,
-          errorMessage:
-              'Gói cập nhật trong version.json không tồn tại hoặc rỗng',
-        );
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+          final match = RegExp(
+            r'^([a-f0-9]{64})\s+\*?([^\r\n]+)$',
+            caseSensitive: false,
+          ).firstMatch(trimmed);
+          if (match == null) continue;
+          final hash = match.group(1)!.trim().toLowerCase();
+          final file = match.group(2)!.trim();
+
+          if (!isValidPackageName(file) || !isValidSha256(hash)) continue;
+
+          final verMatch = RegExp(
+            r'_v?([0-9]+\.[0-9]+(?:\.[0-9]+)?(?:\+[0-9]+)?)',
+            caseSensitive: false,
+          ).firstMatch(file);
+          if (verMatch == null) continue;
+          final semVer = SemanticVersion.tryParse(verMatch.group(1));
+          if (semVer == null) continue;
+
+          if (highestSemVer == null || semVer > highestSemVer) {
+            final pkgFile = File('${dir.path}${Platform.pathSeparator}$file');
+            if (await pkgFile.exists() && await pkgFile.length() > 0) {
+              highestSemVer = semVer;
+              latestFileName = file;
+              latestSha256 = hash;
+            }
+          }
+        }
+
+        if (highestSemVer != null &&
+            latestFileName != null &&
+            latestSha256 != null) {
+          final pkgFile = File(
+            '${dir.path}${Platform.pathSeparator}$latestFileName',
+          );
+          String? notes;
+          final notesFile = File(
+            '${dir.path}${Platform.pathSeparator}RELEASE_NOTES.md',
+          );
+          if (await notesFile.exists()) {
+            notes = await notesFile.readAsString();
+          }
+
+          return UpdateCheckResult(
+            hasUpdate: highestSemVer > currentSemVer,
+            currentVersion: currentVerStr,
+            packageInfo: UpdatePackageInfo(
+              version: highestSemVer,
+              fileName: latestFileName,
+              fullPath: pkgFile.path,
+              fileSize: await pkgFile.length(),
+              sha256: latestSha256,
+              releaseNotes: notes,
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('[OtaUpdateService] Fallback SHA256SUMS.txt error: $e');
       }
-
-      return UpdateCheckResult(
-        hasUpdate: targetSemVer > currentSemVer,
-        currentVersion: currentVerStr,
-        packageInfo: UpdatePackageInfo(
-          version: targetSemVer,
-          fileName: fileName,
-          fullPath: pkgFile.path,
-          fileSize: await pkgFile.length(),
-          sha256: expectedSha256!.trim().toLowerCase(),
-          releaseNotes: notes,
-        ),
-      );
-    } catch (e) {
-      return UpdateCheckResult(
-        hasUpdate: false,
-        currentVersion: currentVerStr,
-        isConnectionSuccess: false,
-        errorMessage: 'Lỗi khi đọc version.json: $e',
-      );
     }
+
+    return UpdateCheckResult(
+      hasUpdate: false,
+      currentVersion: currentVerStr,
+      isConnectionSuccess: false,
+      errorMessage: 'Thiếu version.json có SHA-256 bắt buộc',
+    );
   }
 
   /// Thực hiện tải gói cập nhật, giải nén và kích hoạt script cập nhật

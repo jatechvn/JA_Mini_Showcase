@@ -119,10 +119,10 @@ if errorlevel 1 (
 )
 if exist "%PACK%" rmdir /s /q "%PACK%"
 
-:: Tao SHA256 checksum
-powershell -NoProfile -Command "$hash = (Get-FileHash -Path '%DIST%\JA_Mini_Showcase_v%VERSION%_Windows_x64.zip' -Algorithm SHA256).Hash; Set-Content -Path '%DIST%\SHA256SUMS.txt' -Value \"$hash *JA_Mini_Showcase_v%VERSION%_Windows_x64.zip\""
+:: Tao SHA256 checksum & version.json
+powershell -NoProfile -Command "$hash = (Get-FileHash -Path '%DIST%\JA_Mini_Showcase_v%VERSION%_Windows_x64.zip' -Algorithm SHA256).Hash.ToLower(); Set-Content -Path '%DIST%\SHA256SUMS.txt' -Value \"$hash *JA_Mini_Showcase_v%VERSION%_Windows_x64.zip\"; $notes = if (Test-Path 'RELEASE_NOTES.md') { [IO.File]::ReadAllText((Resolve-Path 'RELEASE_NOTES.md').Path) } else { '' }; $manifest = [ordered]@{ version = '%VERSION%'; fileName = 'JA_Mini_Showcase_v%VERSION%_Windows_x64.zip'; sha256 = $hash; releaseDate = (Get-Date -Format 'yyyy-MM-dd'); releaseNotes = $notes }; $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path '%DIST%\version.json' -Encoding utf8"
 if errorlevel 1 (
-    echo [ERROR] Could not write SHA256SUMS.txt.
+    echo [ERROR] Could not write SHA256SUMS.txt or version.json.
     exit /b 1
 )
 
