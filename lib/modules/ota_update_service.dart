@@ -864,7 +864,8 @@ if errorlevel 8 goto rollback
 echo [3/3] Khoi chay ung dung moi...
 start "" "%DST_DIR%\\%EXE_NAME%"
 
-timeout /t 2 /nobreak >nul
+:: Tu dong don dep sach se thu muc tam (update.zip, extracted, backup, logs) sau khi thoat
+(goto) 2>nul & rd /s /q "%~dp0"
 exit /b 0
 
 :rollback
@@ -873,5 +874,34 @@ if errorlevel 8 exit /b 14
 start "" "%DST_DIR%\\%EXE_NAME%"
 exit /b 15
 ''';
+  }
+
+  /// Dọn dẹp các thư mục tạm còn sót lại từ các lần cập nhật OTA trước đó
+  static Future<int> cleanupStaleTempDirectories({
+    String prefix = 'JA_Mini_Showcase_Update_',
+    Directory? systemTempOverride,
+  }) async {
+    var cleanedCount = 0;
+    try {
+      final tempDir = systemTempOverride ?? Directory.systemTemp;
+      if (!await tempDir.exists()) return 0;
+      await for (final entity in tempDir.list()) {
+        if (entity is Directory) {
+          final name = entity.path.split(Platform.pathSeparator).last;
+          if (name.startsWith(prefix)) {
+            try {
+              await entity.delete(recursive: true);
+              cleanedCount++;
+              debugPrint('[OtaUpdateService] Cleaned up stale temp dir: $name');
+            } catch (e) {
+              debugPrint('[OtaUpdateService] Failed to clean $name: $e');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[OtaUpdateService] Cleanup error: $e');
+    }
+    return cleanedCount;
   }
 }

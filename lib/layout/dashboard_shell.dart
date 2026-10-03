@@ -46,6 +46,7 @@ class _DashboardShellState extends State<DashboardShell> {
   @override
   void initState() {
     super.initState();
+    OtaUpdateService.cleanupStaleTempDirectories();
     _checkOtaUpdatesOnStartup();
   }
 

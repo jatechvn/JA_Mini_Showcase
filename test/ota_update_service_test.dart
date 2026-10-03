@@ -390,6 +390,54 @@ void main() {
         expect(result.errorMessage, contains('version.json'));
       },
     );
+
+    test(
+      'generateApplyUpdateScript includes self-destruct cleanup command',
+      () {
+        final script = OtaUpdateService.generateApplyUpdateScript(
+          oldPid: 1234,
+          sourceDir: r'C:\temp\extracted',
+          targetDir: r'C:\App',
+          exeName: 'app.exe',
+        );
+
+        expect(script, contains(r'(goto) 2>nul & rd /s /q "%~dp0"'));
+      },
+    );
+
+    test(
+      'cleanupStaleTempDirectories purges only matching stale temp directories',
+      () async {
+        final mockTemp = await Directory.systemTemp.createTemp(
+          'mock_sys_temp_',
+        );
+        try {
+          final stale1 = Directory(
+            '${mockTemp.path}/JA_Mini_Showcase_Update_111',
+          );
+          final stale2 = Directory(
+            '${mockTemp.path}/JA_Mini_Showcase_Update_222',
+          );
+          final keep = Directory('${mockTemp.path}/Other_App_Data_333');
+          await stale1.create();
+          await stale2.create();
+          await keep.create();
+
+          final cleaned = await OtaUpdateService.cleanupStaleTempDirectories(
+            systemTempOverride: mockTemp,
+          );
+
+          expect(cleaned, 2);
+          expect(await stale1.exists(), isFalse);
+          expect(await stale2.exists(), isFalse);
+          expect(await keep.exists(), isTrue);
+        } finally {
+          if (await mockTemp.exists()) {
+            await mockTemp.delete(recursive: true);
+          }
+        }
+      },
+    );
   });
 
   group('LanguageProvider OTA translations & formatting', () {
