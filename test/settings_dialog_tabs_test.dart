@@ -42,7 +42,7 @@ void main() {
           home: Scaffold(
             body: DashboardShell(
               appTitle: 'JA UI Showcase',
-              appVersion: '1.4.0',
+              appVersion: '1.4.1',
             ),
           ),
         ),

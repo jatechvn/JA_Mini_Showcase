@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,7 +25,7 @@ void main(List<String> args) async {
   setupLogger();
 
   await initGlassWindow(
-    title: 'JA Mini Showcase - UI Framework Playground',
+    title: 'JA Mini Showcase',
     size: const Size(1200, 820),
     minSize: const Size(760, 520),
   );
@@ -70,12 +68,8 @@ class _AppContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
     final colors = theme.colors;
-    final effectiveTitle = (!kIsWeb && Platform.isWindows && !theme.isWin11)
-        ? ''
-        : 'JA Mini Showcase';
-
     return MaterialApp(
-      title: effectiveTitle,
+      title: 'JA Mini Showcase',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

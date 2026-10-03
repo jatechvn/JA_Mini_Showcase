@@ -1,31 +1,23 @@
-TAG=v1.4.0
-TITLE=JA Mini Showcase v1.4.0 - AppPowerManager, Idle Sleep Mode & Motion Stabilization
+TAG=v1.4.1
+TITLE=JA Mini Showcase v1.4.1 - Native Window Title Branding & PE Metadata Standardization
 BODY=
-## JA Mini Showcase v1.4.0
+## JA Mini Showcase v1.4.1
 
-Bản phát hành v1.4.0 nâng cấp toàn diện hệ thống quản lý năng lượng với `AppPowerManager` tập trung, chế độ Ngủ Rảnh Tay (Hands-free Idle Sleep Mode), bảo toàn hướng chuyển động (Direction Preservation) triệt tiêu giật hình, và bảo vệ phiên cuộn văn bản (Session Epoch Guard).
+Bản phát hành v1.4.1 chuẩn hóa toàn diện tiêu đề cửa sổ hệ sinh thái và thông tin tệp thực thi Windows PE Metadata (Properties/Task Manager) hiển thị đồng nhất tên thương hiệu `JA Mini Showcase` thay vì tên file thực thi `ja_mini_showcase.exe`.
 
 ### 🚀 Nâng cấp & Tính năng chính
-- **Single Source of Truth `AppPowerManager`:**
-  - Quản lý tập trung 4 tầng trạng thái năng lượng: **Active**, **Idle Sleep**, **Efficiency/Blur**, và **Deep Sleep/Minimized**.
-  - Phân tách 3 ValueNotifier độc lập điều khiển các nhóm hoạt ảnh khác nhau, tối ưu năng lượng thông minh.
-- **Chế Độ Ngủ Rảnh Tay (Hands-free Idle Sleep Mode):**
-  - Tự động phát hiện khi người dùng không tương tác qua hệ thống Listener toàn cục (throttled 600ms).
-  - Tự động chuyển hiệu ứng nền `MeshOrb` về trạng thái nghỉ sau 12s (hoặc 30s/60s tùy chọn) giúp giảm tải GPU/CPU tối đa mà giao diện vẫn sống động.
-  - Tích hợp giao diện bật/tắt và chọn thời gian chờ trong hộp thoại Cài đặt (Settings), hỗ trợ Rollback on Cancel.
-- **Bảo Toàn Hướng Chuyển Động (Direction Preservation):**
-  - `MeshOrb` và `WaveIndicator` lưu trữ hướng di chuyển và tiếp tục mượt mà từ đúng offset hiện tại khi tiếp tục chạy, loại bỏ hiện tượng giật giật (visual jitter).
-- **Session Epoch Guard & Đóng Băng Cuộn (Marquee Offset Freeze):**
-  - Đóng băng vị trí cuộn `jumpTo(currentOffset)` của `AsymmetricMarqueeText` khi ứng dụng mất focus, tăng số hiệu phiên `_sessionEpoch` loại bỏ hoàn toàn hiện tượng callback ma (ghost callbacks).
-- **Khắc Phục Lỗi Native Win32 Focus:**
-  - Sửa lỗi `WM_ACTIVATE` trong `win32_window.cpp` tránh chiếm tiêu điểm sai khi cửa sổ đang ở trạng thái inactive.
-- **Đồng Bộ Đa Ngôn Ngữ:**
-  - Hỗ trợ đầy đủ Tiếng Việt, Tiếng Anh và Tiếng Trung cho toàn bộ cài đặt Idle Sleep.
+- **Chuẩn Hóa Tiêu Đề Cửa Sổ (Native Window Title):**
+  - Đồng bộ tiêu đề cửa sổ hệ thống hiển thị chính xác tên thương hiệu `JA Mini Showcase` trên tất cả các phiên bản Windows (Windows 10/11) thay vì tên file exe `ja_mini_showcase.exe`.
+  - Loại bỏ hoàn toàn điều kiện làm rỗng tiêu đề `MaterialApp.title` và `CreateWindow`, đảm bảo thanh Taskbar, Task Manager và Alt+Tab nhận diện tên app rõ ràng.
+  - Tự động gọi `windowManager.setTitle('JA Mini Showcase')` khi khởi tạo ứng dụng.
+- **Chuẩn Hóa Windows Executable Metadata (Runner.rc):**
+  - Cập nhật trường `FileDescription` và `ProductName` thành `JA Mini Showcase`.
+  - Cập nhật `CompanyName` và `LegalCopyright` thành `JA-Tech System`.
 
 ### 🧪 Xác minh & Kiểm thử (Verification)
 - `dart analyze`: Đạt tuyệt đối **0 issues found!**
-- `dart format .`: Đã định dạng chuẩn
+- `dart format .`: Đã định dạng chuẩn toàn bộ codebase
 - `flutter test`: **98/98 tests passed (100%)**
 
 ### 📦 Cài đặt
-Giải nén file `JA_Mini_Showcase_v1.4.0_Windows_x64.zip`, chạy `install.bat` để cài đặt ứng dụng vào máy tính, hoặc chạy trực tiếp `ja_mini_showcase.exe` (bản portable sẵn sàng chạy ngay).
+Giải nén file `JA_Mini_Showcase_v1.4.1_Windows_x64.zip`, chạy `install.bat` để cài đặt ứng dụng vào máy tính, hoặc chạy trực tiếp `ja_mini_showcase.exe` (bản portable sẵn sàng chạy ngay).

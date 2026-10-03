@@ -1,13 +1,13 @@
-# Hướng Dẫn Sử Dụng JA Mini Showcase v1.4.0
+# Hướng Dẫn Sử Dụng JA Mini Showcase v1.4.1
 
-Tài liệu hướng dẫn cài đặt, cấu hình và sử dụng trọn bộ tính năng của **JA Mini Showcase v1.4.0** — Nền tảng trình diễn giao diện Bento Glassmorphism, Quản lý năng lượng tập trung AppPowerManager, Chế độ Ngủ Rảnh Tay (Hands-free Idle Sleep Mode), Chế độ Tiết kiệm Điện Năng Nâng Cao (0 FPS), Terminal tương tác và Cập nhật tự động OTA trên Windows Desktop.
+Tài liệu hướng dẫn cài đặt, cấu hình và sử dụng trọn bộ tính năng của **JA Mini Showcase v1.4.1** — Nền tảng trình diễn giao diện Bento Glassmorphism, Quản lý năng lượng tập trung AppPowerManager, Chế độ Ngủ Rảnh Tay (Hands-free Idle Sleep Mode), Chế độ Tiết kiệm Điện Năng Nâng Cao (0 FPS), Terminal tương tác và Cập nhật tự động OTA trên Windows Desktop.
 
 ---
 
 ## 📦 1. Cài Đặt & Khởi Chạy
 
 ### Cách 1: Sử dụng Bản Cài Đặt 1-Click (Khuyên Dùng)
-1. Tải về gói nén: `JA_Mini_Showcase_v1.4.0_Windows_x64.zip`.
+1. Tải về gói nén: `JA_Mini_Showcase_v1.4.1_Windows_x64.zip`.
 2. Giải nén toàn bộ thư mục.
 3. Nhấp đúp chuột vào file `install.bat`.
    - Ứng dụng sẽ được cài đặt tự động vào `%LOCALAPPDATA%\Programs\JA_Mini_Showcase` (**hoàn toàn không cần quyền Quản trị viên / Admin**).

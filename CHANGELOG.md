@@ -4,6 +4,30 @@ All notable changes to **JA Mini Showcase** will be documented in this file.
 
 ---
 
+## [v1.4.1] - 2026-10-03
+
+### 🚀 Nâng cấp & Tính năng mới
+- **🪟 Chuẩn Hóa Tiêu Đề Cửa Sổ Hệ Thống (Native Window Title):**
+  - Đồng bộ tiêu đề cửa sổ hiển thị thành tên thương hiệu ứng dụng (`JA Mini Showcase`) thay vì tên tệp nhị phân (`ja_mini_showcase.exe`).
+  - Loại bỏ hoàn toàn điều kiện làm rỗng tiêu đề trên Windows 10 trong `lib/main.dart` và `windows/runner/win32_window.cpp`, đảm bảo Taskbar, Task Manager và Alt+Tab luôn hiển thị chính xác tên ứng dụng.
+  - Gọi tường minh `windowManager.setTitle(title)` trong `lib/modules/window_helper.dart` ngay khi khởi tạo trên môi trường Windows Desktop.
+- **🏷️ Chuẩn Hóa Windows Metadata & Thuộc Tính Executable (Runner.rc):**
+  - Cập nhật thông tin tệp thực thi Windows PE trong `windows/runner/Runner.rc`:
+    - `FileDescription`: Đổi từ `ja_mini_showcase` thành `JA Mini Showcase` (hiển thị chuẩn trên cột Description của Windows Task Manager và Properties).
+    - `ProductName`: Đổi từ `ja_mini_showcase` thành `JA Mini Showcase`.
+    - `CompanyName`: Đổi từ `com.example` thành `JA-Tech System`.
+    - `LegalCopyright`: Đổi từ `com.example` thành `Copyright (C) 2026 JA-Tech System. All rights reserved.`.
+
+### 🧪 Testing & Quality Assurance
+- Kiểm thử toàn diện 100% test suites: **98/98 tests PASS**.
+- `dart analyze`: Đạt tuyệt đối **0 issues found!**.
+- `dart format .`: Đã định dạng chuẩn toàn bộ codebase.
+
+### 📦 Phát hành
+- Đồng bộ version 1.4.1+7 trong `pubspec.yaml`, `lib/modules/constants.dart`, `windows/runner/Runner.rc`, `ABOUT.txt`, `README.md`, `RELEASE_NOTES.md`, `USERGUIDE.md`.
+
+---
+
 ## [v1.4.0] - 2026-10-02
 
 ### 🚀 Nâng cấp & Tính năng mới

@@ -12,7 +12,7 @@
   <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.44.2-02569B?logo=flutter&logoColor=white">
   <img alt="Dart" src="https://img.shields.io/badge/Dart-3.12.2-0175C2?logo=dart&logoColor=white">
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Windows%20Desktop-0078D4?logo=windows&logoColor=white">
-  <img alt="Release" src="https://img.shields.io/badge/Release-v1.4.0-10B981">
+  <img alt="Release" src="https://img.shields.io/badge/Release-v1.4.1-10B981">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-lightgrey">
 </p>
 
@@ -237,6 +237,7 @@ The in-app theme toggle updates Flutter-level colors immediately. Native Windows
 
 ## Changelog Recap
 
+- **v1.4.1:** Native Windows window title branding (`JA Mini Showcase` instead of `ja_mini_showcase.exe` across Taskbar, Task Manager, Alt+Tab) and PE metadata standardization (`Runner.rc` FileDescription, ProductName, CompanyName).
 - **v1.4.0:** Centralized `AppPowerManager` with 4-tier energy policy matrix, Hands-free Idle Sleep Mode (12s/30s/60s) with Settings configuration and Rollback on Cancel, smooth Direction Preservation (`MeshOrb`, `WaveIndicator`), Session Epoch Guard & scroll freezing (`AsymmetricMarqueeText`), Win32 native focus correction, and 98 automated tests passing (100%).
 - **v1.3.0:** Low-Power Efficiency Sleep Mode (0 FPS) with dual-layer OS event detection (`WindowFocusService`), dynamic zero-blur and background solid state, UI animation freezing, new 3D crystal prism icon branding (`app_icon.ico` & in-app header/about logos), OTA quick selection buttons, and 82 automated tests passing.
 - **v1.2.0:** Corporate LAN Over-The-Air (OTA) self-update mechanism with UNC SMB share mounting and atomic Robocopy installer, Windows Desktop 1-Click Installer & Uninstaller suite (`install.bat`, `uninstall.bat`, `uninstall.ps1`), hardware-adaptive performance tiers (High/Balanced/Lite), persistent search history repository, and 70 automated tests.
